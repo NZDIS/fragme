@@ -15,6 +15,17 @@ import org.jgroups.Address;
  */
 public class TestControlCenter extends TestCase {
 
+	static String path = "java -jar ";
+	
+	static {
+		/*
+		 * class for testing with multiple peers should be regenerated when changing code base. 
+		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
+		 */
+		path += TestGetObjects.class.getResource("TestClass.jar").getPath().substring(1);
+		System.out.println("Path to multiple peer test jar file: " + path);
+	}
+	
 	/**
 	 * Sets up a new connection for each test case.
 	 */
@@ -27,6 +38,13 @@ public class TestControlCenter extends TestCase {
 	 */
 	public void tearDown() {
 		ControlCenter.closeUpConnections();
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("Waiting 5 seconds for channel to close down.");
 	}
 
 	/**
@@ -174,16 +192,16 @@ public class TestControlCenter extends TestCase {
 		// String file = "java -jar
 		// c:\\eclipse\\workspace\\fragme\\src\\tests\\testControlCenter\\test2.
 		// jar";
-		String file = "java -jar s:\\Eclipse33\\fragme\\src\\tests\\testControlCenter\\test2.jar";
-		Runtime.getRuntime().exec(file);
+		//String file = "java -jar s:\\Eclipse33\\fragme\\src\\tests\\testControlCenter\\test2.jar";
+		Runtime.getRuntime().exec(path);
 		System.out.println("Wait 10 secs");
 		Thread.sleep(10000);
 		assertEquals("Peer count incorrect", 1, ControlCenter.getNoOfPeers());
-		Runtime.getRuntime().exec(file);
+		Runtime.getRuntime().exec(path);
 		System.out.println("Wait 10 secs");
 		Thread.sleep(10000);
 		assertEquals(
-				"New peer not joined or getNoOfPeeres() not returning the right number of peers",
+				"New peer not joined or getNoOfPeers() not returning the right number of peers",
 				2, ControlCenter.getNoOfPeers());
 		System.out.println("Wait 30 secs");
 		Thread.sleep(30000);

@@ -73,7 +73,7 @@ public class TestMessageSending extends TestCase {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public void testSendMessageWithRecepient() throws InterruptedException,
+	public void testSendMessageWithRecipient() throws InterruptedException,
 			IOException {
 		Client1 c1 = new Client1();
 		c1.start();
@@ -115,7 +115,7 @@ public class TestMessageSending extends TestCase {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public void testSendMessageWithRecepientAndType()
+	public void testSendMessageWithRecipientAndType()
 			throws InterruptedException, IOException {
 		Client1 c1 = new Client1();
 		c1.start();

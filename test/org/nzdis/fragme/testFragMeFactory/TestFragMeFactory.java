@@ -26,6 +26,7 @@ public class TestFragMeFactory extends TestCase {
 	 * Sets up a new connection for each test case.
 	 */
 	public void setUp() {
+		new TestClass2();
 		ControlCenter.setUpConnections("testGroup1", "testPeer");
 	}
 

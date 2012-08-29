@@ -13,12 +13,13 @@ import junit.framework.TestCase;
  */
 public class TestFMeObject extends TestCase {
 
-	private TestObjectC test;
+	private TestObjectC test = null;
 
 	/**
 	 * Sets up before each test
 	 */
 	public void setUp() {
+		new TestObjectC();
 		ControlCenter.setUpConnections("testGroup1", "testPeer2");
 		test = (TestObjectC) ControlCenter.createNewObject(TestObjectC.class);
 	}
@@ -81,7 +82,7 @@ public class TestFMeObject extends TestCase {
 	public void testEquals() {
 		TestObjectC test2 = (TestObjectC) ControlCenter
 				.createNewObject(TestObjectC.class);
-		// trival case
+		// trivial case
 		assertTrue(
 				"equal() method should return true as it is comparing same object",
 				test.equals(test));

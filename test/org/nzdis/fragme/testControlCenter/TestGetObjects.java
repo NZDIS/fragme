@@ -24,8 +24,22 @@ public class TestGetObjects extends TestCase {
 	 */
 	// String path = "java -jar
 	// C:\\eclipse\\workspace\\fragme\\src\\tests\\testControlCenter\\TestGetObjectPeer.jar";
-	String path = "java -jar S:\\Eclipse33\\fragme\\src\\tests\\testControlCenter\\TestGetObjectPeer.jar";
+	static String path = "java -jar ";//S:\\Eclipse33\\fragme\\src\\tests\\testControlCenter\\TestGetObjectPeer.jar";
 
+	static {
+		/*
+		 * class for testing with multiple peers should be regenerated when changing code base. 
+		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestGetObjectPeer.java as main class
+		 */
+		path += TestGetObjects.class.getResource("TestGetObjectsPeer.jar").getPath().substring(1);
+		System.out.println("Path to multiple peer test jar file: " + path);
+		
+		//explicitly instantiating of TestObject classes to ensure registration with FragMeFactory
+		new TestObjectA();
+		new TestObjectB();
+		new TestObjectC();
+	}
+	
 	/**
 	 * Sets up a new connection for each test case.
 	 */
