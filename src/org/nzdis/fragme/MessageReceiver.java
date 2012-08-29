@@ -5,7 +5,7 @@ import org.nzdis.fragme.objects.Message;
 /**
  * The Message Receiver Interface - called by MessageManager
  */
-public interface MessageReciever {
+public interface MessageReceiver {
 
 	/**
 	 * Called by MessageManager
@@ -13,5 +13,5 @@ public interface MessageReciever {
 	 * @param message
 	 *            Message to be received
 	 */
-	public abstract void msgRecievedEvent(Message message);
+	public abstract void msgReceivedEvent(Message message);
 }

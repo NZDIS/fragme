@@ -1,7 +1,7 @@
 package org.nzdis.fragme.testMessageSending;
 
 import org.nzdis.fragme.ControlCenter;
-import org.nzdis.fragme.MessageReciever;
+import org.nzdis.fragme.MessageReceiver;
 import org.nzdis.fragme.objects.Message;
 
 /**
@@ -10,7 +10,7 @@ import org.nzdis.fragme.objects.Message;
  * @author Frank Wu
  *
  */
-public class Client1 extends Thread implements MessageReciever {
+public class Client1 extends Thread implements MessageReceiver {
 	/**
 	 * Sets up a new connection and allow it to receive messages
 	 */
@@ -24,7 +24,7 @@ public class Client1 extends Thread implements MessageReciever {
 	 * 
 	 * @param message the message to be sent
 	 */
-	public void msgRecievedEvent(Message message) {
+	public void msgReceivedEvent(Message message) {
 		TestMessageSending.msg = message;
 	}
 

@@ -7,10 +7,10 @@ import org.nzdis.fragme.objects.Message;
 
 public class MessageManager implements Observer {
 
-	MessageReciever actionObject;
+	MessageReceiver actionObject;
 
 	public MessageManager(Object o) {
-		actionObject = (MessageReciever) o;
+		actionObject = (MessageReceiver) o;
 	}
 
 	public void update(Observable o, Object arg) {
@@ -25,7 +25,7 @@ public class MessageManager implements Observer {
 			Vector recipients = msg.getRecipients();
 
 			if (recipients == null || recipients.contains(myName)) {
-				actionObject.msgRecievedEvent(msg);
+				actionObject.msgReceivedEvent(msg);
 			}
 		}
 	}
