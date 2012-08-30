@@ -27,6 +27,8 @@ public class TestControlCenter extends TestCase {
 		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
 			subPath = subPath.substring(1);
 			path = "cmd /C start " + path;
+		} else if(DetermineOS.getOS().equals(DetermineOS.LINUX)){
+			path += "-Djava.net.preferIPv4Stack=true ";
 		}
 		path += subPath;
 		System.out.println("Path to multiple peer test jar file: " + path);
