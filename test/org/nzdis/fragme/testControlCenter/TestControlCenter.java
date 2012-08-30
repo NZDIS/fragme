@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Vector;
 import junit.framework.TestCase;
 import org.nzdis.fragme.ControlCenter;
+import org.nzdis.fragme.util.DetermineOS;
 import org.jgroups.Address;
 
 /**
@@ -22,7 +23,12 @@ public class TestControlCenter extends TestCase {
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
 		 */
-		path += TestGetObjects.class.getResource("TestClass.jar").getPath().substring(1);
+		String subPath = TestControlCenter.class.getResource("TestClass.jar").getPath();
+		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
+			subPath = subPath.substring(1);
+			path = "cmd /C start " + path;
+		}
+		path += subPath;
 		System.out.println("Path to multiple peer test jar file: " + path);
 	}
 	
@@ -30,6 +36,8 @@ public class TestControlCenter extends TestCase {
 	 * Sets up a new connection for each test case.
 	 */
 	public void setUp() {
+		//System.setProperty("java.net.preferIPv4Stack", "true");
+    	//System.setProperty("java.net.preferIPv6Addresses", "false");
 		ControlCenter.setUpConnections("testGroup1", "testPeer");
 	}
 
@@ -188,11 +196,7 @@ public class TestControlCenter extends TestCase {
 	 */
 	public void testGetNoOfPeers() throws IOException, InterruptedException {
 		assertEquals(0, ControlCenter.getNoOfPeers());
-
-		// String file = "java -jar
-		// c:\\eclipse\\workspace\\fragme\\src\\tests\\testControlCenter\\test2.
-		// jar";
-		//String file = "java -jar s:\\Eclipse33\\fragme\\src\\tests\\testControlCenter\\test2.jar";
+		
 		Runtime.getRuntime().exec(path);
 		System.out.println("Wait 10 secs");
 		Thread.sleep(10000);

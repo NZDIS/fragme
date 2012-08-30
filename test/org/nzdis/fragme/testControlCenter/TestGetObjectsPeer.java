@@ -14,6 +14,7 @@ import org.nzdis.fragme.ControlCenter;
  */
 public class TestGetObjectsPeer implements Serializable {
 	public static void main(String args[]) {
+		new TestObjectC();
 		ControlCenter.setUpConnections("testGroup1", "testPeer2");
 		TestObjectC c = (TestObjectC) ControlCenter.createNewObject(TestObjectC.class);
 		c.setDummy("hello2");

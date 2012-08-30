@@ -15,6 +15,12 @@ import org.nzdis.fragme.testObjects.TestObjectManager;
  * 
  */
 public class FragMeTestSuite extends TestSuite {
+	
+	static{
+		//System.setProperty("java.net.preferIPv4Stack", "true");
+    	//System.setProperty("java.net.preferIPv6Addresses", "false");
+	}
+	
 	public static TestSuite suite() {
 		TestSuite suite = new TestSuite();
 		suite.addTestSuite(TestFMeObject.class);

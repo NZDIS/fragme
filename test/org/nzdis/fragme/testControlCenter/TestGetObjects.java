@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Vector;
 import junit.framework.TestCase;
 import org.nzdis.fragme.ControlCenter;
+import org.nzdis.fragme.util.DetermineOS;
 
 /**
  * A test suite containing tests of object management/retrieval
@@ -22,16 +23,21 @@ public class TestGetObjects extends TestCase {
 	 * machine. Path depends on where TestGetObjectPeer.jar is located on the
 	 * file system
 	 */
-	// String path = "java -jar
-	// C:\\eclipse\\workspace\\fragme\\src\\tests\\testControlCenter\\TestGetObjectPeer.jar";
-	static String path = "java -jar ";//S:\\Eclipse33\\fragme\\src\\tests\\testControlCenter\\TestGetObjectPeer.jar";
+	
+	static String path = "java -jar ";
 
+	//building path to external jar
 	static {
 		/*
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestGetObjectPeer.java as main class
 		 */
-		path += TestGetObjects.class.getResource("TestGetObjectsPeer.jar").getPath().substring(1);
+		String subPath = TestGetObjects.class.getResource("TestGetObjectsPeer.jar").getPath();
+		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
+			subPath = subPath.substring(1);
+			path = "cmd /C start " + path;
+		}
+		path += subPath;
 		System.out.println("Path to multiple peer test jar file: " + path);
 		
 		//explicitly instantiating of TestObject classes to ensure registration with FragMeFactory
@@ -123,7 +129,7 @@ public class TestGetObjects extends TestCase {
 				.createNewObject(TestObjectC.class);
 		c.setDummy("hello3");
 
-		Runtime.getRuntime().exec(path);
+		Process runningFragMeInstance = Runtime.getRuntime().exec(path);
 		System.out.println("Wait 10 secs");
 		Thread.sleep(10000);
 		Vector v = ControlCenter.getAllObjects(TestObjectC.class);
