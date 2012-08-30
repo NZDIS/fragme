@@ -211,7 +211,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		 * Starts the thread if there are other peers in the system
 		 */
 		public void run() {
-			System.out.println("new peer fostering thread running");
+			System.out.println("New Peer Fostering Thread started");
 			if (noOfOtherPeers > 0) { // otherwise we are the first peer
 				Address peerToFosterMeAddr = null;
 				while (true) {
@@ -378,11 +378,11 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public void send(String performative, Object objectToSend, Address addr) {
 		Serializable serialised = null;
 		if (objectToSend instanceof FMeObject) {
-			System.out.println("instanceof FMeObject");
+			System.out.println("Object to send is instance of FMeObject");
 			serialised = (FMeObject) objectToSend;
 		} else {
 			if (objectToSend instanceof Serializable) {
-				System.out.println("instanceof Serializable");
+				System.out.println("Object to send is instance of Serializable");
 				serialised = (Serializable) objectToSend;
 			} else {
 				throw new RuntimeException(
@@ -394,7 +394,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		fragMsg.setPerformative(performative);
 		Message msg = new Message(addr, myAddr, fragMsg);
 		try {
-			System.out.println("Send a message through channel");
+			System.out.println("Sending message through channel");
 			channel.send(msg);
 		} catch (Exception e) {
 			e.printStackTrace();

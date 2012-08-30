@@ -200,17 +200,17 @@ public abstract class FragMeFactory {
 			object.setOwnerAddr(serObject.getOwnerAddr());
 			ObjectManager OM = ControlCenter.getObjectManager();
 
-			// look up to see if this object already exist in the game
+			// look up to see if this object already exists in the game
 			FMeObject existObject = OM.lookup(object);
 
 			if (existObject == null) {
-				System.out.println("Create a new object!");
+				System.out.println("Creating a new object!");
 				object.deserialize(serObject);
 				serObject = null;
 				OM.addObject(object);
 				return object;
 			} else {
-				System.out.println("Using exist object!");
+				System.out.println("Reusing an existing object!");
 				existObject.deserialize(serObject);
 				serObject = null;
 				freeObject(object, object.getClass());
