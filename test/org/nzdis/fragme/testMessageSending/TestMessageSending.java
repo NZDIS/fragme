@@ -3,22 +3,47 @@ package org.nzdis.fragme.testMessageSending;
 import java.io.IOException;
 import org.nzdis.fragme.ControlCenter;
 import org.nzdis.fragme.objects.Message;
+import org.nzdis.fragme.testControlCenter.TestControlCenter;
+import org.nzdis.fragme.util.DetermineOS;
 import junit.framework.TestCase;
 
 /**
  * This class tests the message sending functionalities implemented in
- * ControlCentre that sends messages from one peer to another.
+ * ControlCenter that sends messages from one peer to another.
  * 
  * @author Frank Wu
+ * @author Christopher Frantz - revised to automate tests (and automatically generate pathnames for external jar).
  * 
  */
 public class TestMessageSending extends TestCase {
 
+	static final Integer delay = 8000;
+	static String path = "java -jar ";
+	
+	static {
+		/*
+		 * class for testing with multiple peers should be regenerated when changing code base. 
+		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
+		 */
+		String subPath = TestMessageSending.class.getResource("Client2.jar").getPath();
+		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
+			subPath = subPath.substring(1);
+			path = "cmd /C start " + path;
+		} else if(DetermineOS.getOS().equals(DetermineOS.LINUX)){
+			path += "-Djava.net.preferIPv4Stack=true ";
+		}
+		path += subPath;
+		System.out.println("Path to multiple peer test jar file: " + path);
+		//ensure that message class is loaded into FragMe factory
+		new Message();
+	}
+	
 	/**
 	 * Sets up a new connection for each test case. 
 	 */
 	public void setUp() {
-		// ControlCenter.setUpConnections("testGroup1", "testPeer");
+		//reset message
+		msg = null;
 	}
 
 	/**
@@ -41,22 +66,15 @@ public class TestMessageSending extends TestCase {
 	 * @throws IOException
 	 */
 	public void testSendMessage() throws InterruptedException, IOException {
-		// ControlCenter.closeUpConnections();
 		Client1 c1 = new Client1();
 		c1.start();
-		System.out.println("wait 10s");
-		Thread.sleep(10000);
-		System.out.println("10s up");
-		// try {
-		// Runtime.getRuntime().exec(
-		// "java -jar S:\\Eclipse33\\fragme\\src\\tests\\test.jar");
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		System.out.println("wait 10s");
-		Thread.sleep(10000);
-		System.out.println("10s up");
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
+		Runtime.getRuntime().exec(path + " testSendMessage");
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",
@@ -77,7 +95,13 @@ public class TestMessageSending extends TestCase {
 			IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		Thread.sleep(10000);
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
+		Runtime.getRuntime().exec(path + " testSendMessageWithRecipient > out.txt");
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",
@@ -98,7 +122,13 @@ public class TestMessageSending extends TestCase {
 			IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		Thread.sleep(10000);
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
+		Runtime.getRuntime().exec(path + " testSendMessageWithType");
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",
@@ -119,7 +149,13 @@ public class TestMessageSending extends TestCase {
 			throws InterruptedException, IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		Thread.sleep(10000);
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
+		Runtime.getRuntime().exec(path + " testSendMessageWithRecipientAndType");
+		System.out.println("waiting for " + delay + "ms");
+		Thread.sleep(delay);
+		System.out.println(delay + "ms up");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",

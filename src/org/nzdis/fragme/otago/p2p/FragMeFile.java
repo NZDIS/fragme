@@ -10,7 +10,7 @@ import java.io.Serializable;
 
 /**
  * Whenever what kind of file you are sending,
- * you have to serizlize file into a FragMeFile first
+ * you have to serialize file into a FragMeFile first
  * 
  * @author DengFeng , Ning, Abdulla
  * 

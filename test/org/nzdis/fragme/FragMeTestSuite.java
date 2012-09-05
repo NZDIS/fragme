@@ -4,6 +4,7 @@ import junit.framework.TestSuite;
 import org.nzdis.fragme.testControlCenter.TestControlCenter;
 import org.nzdis.fragme.testControlCenter.TestGetObjects;
 import org.nzdis.fragme.testFragMeFactory.TestFragMeFactory;
+import org.nzdis.fragme.testMessageSending.TestMessageSending;
 import org.nzdis.fragme.testObjects.TestFMeObject;
 import org.nzdis.fragme.testObjects.TestObjectManager;
 
@@ -12,6 +13,7 @@ import org.nzdis.fragme.testObjects.TestObjectManager;
  * the FragMe framework
  * 
  * @author Frank Wu
+ * @author Christopher Frantz - revised (05/09/2012)
  * 
  */
 public class FragMeTestSuite extends TestSuite {
@@ -27,6 +29,7 @@ public class FragMeTestSuite extends TestSuite {
 		suite.addTestSuite(TestFragMeFactory.class);
 		suite.addTestSuite(TestObjectManager.class);
 		suite.addTestSuite(TestGetObjects.class);
+		suite.addTestSuite(TestMessageSending.class);
 		suite.addTestSuite(TestControlCenter.class);
 		return suite;
 	}

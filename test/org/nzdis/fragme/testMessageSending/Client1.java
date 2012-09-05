@@ -17,7 +17,7 @@ public class Client1 extends Thread implements MessageReceiver {
 	public void run() {
 		ControlCenter.setUpConnections("test", "c1");
 		ControlCenter.receiveMessages(this);
-		System.out.println("SEND NOW (run Client2.java)");
+		System.out.println("Client1 set up. Waiting for Client2 to send...");
 	}
 	/**
 	 * Sets the TestMessageSending.msg field
