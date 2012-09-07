@@ -32,6 +32,8 @@ import org.jgroups.blocks.PullPushAdapter;
  */
 public class PeerManagerImpl extends Observable implements PeerManager,
 		MessageListener, MembershipListener {
+	
+	private static boolean debug = ControlCenter.debug;
 
 	/** the singleton instance of PeerManagerImpl */
 	private static PeerManagerImpl instance;
@@ -378,11 +380,15 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public void send(String performative, Object objectToSend, Address addr) {
 		Serializable serialised = null;
 		if (objectToSend instanceof FMeObject) {
-			System.out.println("Object to send is instance of FMeObject");
+			if(debug){
+				System.out.println("Object to send is instance of FMeObject");
+			}
 			serialised = (FMeObject) objectToSend;
 		} else {
 			if (objectToSend instanceof Serializable) {
-				System.out.println("Object to send is instance of Serializable");
+				if(debug){
+					System.out.println("Object to send is instance of Serializable");
+				}
 				serialised = (Serializable) objectToSend;
 			} else {
 				throw new RuntimeException(
@@ -394,7 +400,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		fragMsg.setPerformative(performative);
 		Message msg = new Message(addr, myAddr, fragMsg);
 		try {
-			System.out.println("Sending message through channel");
+			if(debug){
+				System.out.println("Sending message through channel");
+			}
 			channel.send(msg);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -502,7 +510,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 */
 	private void receiveModify(Object content) {
 		if (content instanceof FMeObject) {
-			System.out.println("Receive: FMeObject");
+			if(debug){
+				System.out.println("Receive: FMeObject");
+			}
 			FMeObject serialised = (FMeObject) content;
 			FMeObject receivedObject = FragMeFactory.deserialize(serialised);
 			serialised = null;
@@ -512,7 +522,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			this.notifyObservers(receivedObject);
 			receivedObject = null;
 		} else if (content instanceof FMeObjectReflection) {
-			System.out.println("Receive: FMeObjectReflection");
+			if(debug){
+				System.out.println("Receive: FMeObjectReflection");
+			}
 			FMeObjectReflection refObject = (FMeObjectReflection) content;
 
 			ObjectManager OM = ControlCenter.getObjectManager();

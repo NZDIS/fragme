@@ -17,6 +17,8 @@ import org.nzdis.fragme.ControlCenter;
 public abstract class FragMeFactory {
 	// all member are kept static as they are only needed once.
 
+	private static boolean debug = ControlCenter.debug;
+	
 	/**
 	 * for each key (FMEObjectName as string) this Hashtable stores all free
 	 * FMEObjects of this type in a ArrayList
@@ -204,13 +206,17 @@ public abstract class FragMeFactory {
 			FMeObject existObject = OM.lookup(object);
 
 			if (existObject == null) {
-				System.out.println("Creating a new object!");
+				if(debug){
+					System.out.println("Creating a new object!");
+				}
 				object.deserialize(serObject);
 				serObject = null;
 				OM.addObject(object);
 				return object;
 			} else {
-				System.out.println("Reusing an existing object!");
+				if(debug){
+					System.out.println("Reusing an existing object!");
+				}
 				existObject.deserialize(serObject);
 				serObject = null;
 				freeObject(object, object.getClass());

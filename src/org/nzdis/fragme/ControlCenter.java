@@ -27,6 +27,8 @@ import org.jgroups.Address;
  */
 public abstract class ControlCenter {
 
+	public static boolean debug = false;
+	
 	/**
 	 * Static instance of this peer's PeerManager
 	 */
