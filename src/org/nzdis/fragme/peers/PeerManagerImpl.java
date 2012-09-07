@@ -17,6 +17,7 @@ import org.nzdis.fragme.peers.TypeWrappers.FlagBool;
 import org.nzdis.fragme.peers.TypeWrappers.FlagInt;
 import org.jgroups.Address;
 import org.jgroups.Channel;
+import org.jgroups.ChannelListener;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
 import org.jgroups.Message;
@@ -31,7 +32,7 @@ import org.jgroups.blocks.PullPushAdapter;
  * @refactored Morgan Bruce, Frank Wu 1/8/2008
  */
 public class PeerManagerImpl extends Observable implements PeerManager,
-		MessageListener, MembershipListener {
+		MessageListener, MembershipListener, ChannelListener {
 	
 	private static boolean debug = ControlCenter.debug;
 
@@ -80,6 +81,15 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/** The transport channel used */
 	private JChannel channel;
 
+	/** indicates if channel connected (as reported by JGroups) */
+	private boolean connected = false;
+	/** time out for channel activation (in ms) */
+	private final int activationTimeOut = 5000;
+	/** check iterations for timeout (in ms) */
+	private final long timeBetweenActivationChecks = 200;
+	/** additional conservative wait to ensure connection is really established (in ms) */
+	private final long additionalWaitAfterConnect = 2000;
+	
 	/** the PushPullAdaptor used */
 	private PullPushAdapter adaptor;
 
@@ -253,6 +263,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public boolean activate() {
 		try {
 			channel = new JChannel(props);
+			channel.setChannelListener(this);
 			channel.setOpt(Channel.LOCAL, new Boolean(false));
 			channel.connect(groupName);
 
@@ -290,6 +301,17 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 			PeerFosteringThread newThread = new PeerFosteringThread();
 			threads.add(newThread);
+			
+			long expiredTime = 0;
+			while(!connected && expiredTime < activationTimeOut){
+				Thread.sleep(timeBetweenActivationChecks);
+				expiredTime += timeBetweenActivationChecks;
+			}
+			if(!connected){
+				throw new RuntimeException("Connection to Channel '" + groupName + "' was not established within " + activationTimeOut + "ms.");
+			} else {
+				Thread.sleep(additionalWaitAfterConnect);
+			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			System.out.println("Couldn't create JChannel!");
@@ -787,5 +809,44 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 */
 	public String getGroupName() {
 		return groupName;
+	}
+
+	@Override
+	public void channelConnected(Channel channel) {
+		if(debug){
+			System.out.println("Channel '" + groupName + "' connected.");
+		}
+		connected = true;
+	}
+
+	@Override
+	public void channelDisconnected(Channel channel) {
+		if(debug){
+			System.out.println("Channel '" + groupName + "' disconnected.");
+		}
+		connected = false;
+	}
+
+	@Override
+	public void channelClosed(Channel channel) {
+		if(debug){
+			System.out.println("Channel '" + groupName + "' closed.");
+		}
+		connected = false;
+	}
+
+	@Override
+	public void channelShunned() {
+		if(debug){
+			System.out.println("Channel '" + groupName + "' shunned.");
+		}
+	}
+
+	@Override
+	public void channelReconnected(Address addr) {
+		if(debug){
+			System.out.println("Channel '" + groupName + "' reconnected.");
+		}
+		connected = true;
 	}
 }

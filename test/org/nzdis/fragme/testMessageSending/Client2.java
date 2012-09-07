@@ -32,9 +32,9 @@ public class Client2 {
 		if(args != null && args.length > 0){
 			testName = args[0];
 		}
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		//System.out.println("waiting for " + delay + "ms");
+		//Thread.sleep(delay);
+		//System.out.println(delay + "ms up");
 		if(testName != null){
 			if(testName.equals("testSendMessage")){
 				/**
@@ -63,6 +63,6 @@ public class Client2 {
 		}
 		ControlCenter.closeUpConnections();
 		Thread.sleep(delay);
-		System.exit(0);
+		//System.exit(0);
 	}
 }
