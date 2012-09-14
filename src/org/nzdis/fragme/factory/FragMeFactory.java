@@ -193,7 +193,7 @@ public abstract class FragMeFactory {
 	 * @return the deserialized version of the object, or null if an exception
 	 *         occurred
 	 */
-	public static final FMeObject deserialize(FMeObject serObject) {
+	public synchronized static final FMeObject deserialize(FMeObject serObject) {
 		try {
 			// create FMeObject
 			FMeObject object = (FMeObject) getObject(serObject.getClass());

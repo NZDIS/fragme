@@ -51,7 +51,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	/**
 	 * A temporary Vector holds all the objects in the system
 	 */
-	private Vector allObjects = new Vector();
+	//private Vector allObjects = new Vector();
 
 	/**
 	 * Default constructor
@@ -102,8 +102,9 @@ public class ObjectManagerImpl implements ObjectManager {
 	 */
 
 	public Vector getOwnObjects() {
-		synchronized (allObjects) {
-			allObjects.clear();
+		//synchronized (allObjects) {
+			//allObjects.clear();
+		Vector allObjects = new Vector();
 			synchronized (ownObjects) {
 				allObjects.addAll(ownObjects.getObjects());
 				// For some incomprehensible reason, this code added all own
@@ -120,7 +121,7 @@ public class ObjectManagerImpl implements ObjectManager {
 
 			} // end synchronized(ownObjects)
 			return allObjects;
-		} // end synchronized(allObjects)
+		//} // end synchronized(allObjects)
 	}
 
 	/**
@@ -132,14 +133,15 @@ public class ObjectManagerImpl implements ObjectManager {
 	 * @return A vector of own objects of a peer
 	 */
 	public Vector getOwnObjects(Class className) {
-		synchronized (allObjects) {
-			allObjects.clear();
+		//synchronized (allObjects) {
+			//allObjects.clear();
+		Vector allObjects = new Vector();
 			synchronized (ownObjects) {
 				Vector v = ownObjects.getObjects(className);
 				allObjects.addAll(v);
 			} // end synchronized(ownObjects)
 			return allObjects;
-		} // end synchronized(allObjects)
+		//} // end synchronized(allObjects)
 	}
 
 	/**
@@ -148,8 +150,9 @@ public class ObjectManagerImpl implements ObjectManager {
 	 * @return a vector of all the objects
 	 */
 	public Vector getAllObjects() {
-		synchronized (allObjects) {
-			allObjects.clear();
+		//synchronized (allObjects) {
+			//allObjects.clear();
+		Vector allObjects = new Vector();
 			synchronized (storageForOtherPeers) {
 				synchronized (ownObjects) {
 					allObjects.addAll(ownObjects.getObjects());
@@ -161,7 +164,7 @@ public class ObjectManagerImpl implements ObjectManager {
 				} // end synchronized(ownObjects)
 			} // end synchronized(storageForOtherPeers)
 			return allObjects;
-		} // end synchronized(allObjects)
+		//} // end synchronized(allObjects)
 	}
 
 	/**
@@ -172,9 +175,10 @@ public class ObjectManagerImpl implements ObjectManager {
 	 *            the name of a class
 	 * @return A vector of all the objects that is an instance of a class
 	 */
-	public Vector getAllObjects(Class className) {
-		synchronized (allObjects) {
-			allObjects.clear();
+	public synchronized Vector getAllObjects(Class className) {
+		//synchronized (allObjects) {
+			//allObjects.clear();
+		Vector allObjects = new Vector();
 			synchronized (storageForOtherPeers) {
 				synchronized (ownObjects) {
 					Vector v = ownObjects.getObjects(className);
@@ -188,7 +192,7 @@ public class ObjectManagerImpl implements ObjectManager {
 				} // end synchronized(ownObjects)
 			} // end synchronized(storageForOtherPeers)
 			return allObjects;
-		} // end synchronized(allObjects)
+		//} // end synchronized(allObjects)
 	}
 
 	/**
@@ -347,10 +351,9 @@ public class ObjectManagerImpl implements ObjectManager {
 	private void addObjectOfOtherPeer(FMeObject object) {
 		synchronized (storageForOtherPeers) {
 			if (storageForOtherPeers.get(object.getOwnerAddr()) == null) {
-				System.out.println("not allocated memory for peer yet");
+				System.err.println("not allocated memory for peer yet: " + object.getOwnerAddr());
 			}
-			ObjectStorageForPeer peerStorage = (ObjectStorageForPeer) storageForOtherPeers
-					.get(object.getOwnerAddr());
+			ObjectStorageForPeer peerStorage = (ObjectStorageForPeer) storageForOtherPeers.get(object.getOwnerAddr());
 			peerStorage.addObject(object);
 		}
 	}

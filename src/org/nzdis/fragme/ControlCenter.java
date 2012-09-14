@@ -263,8 +263,7 @@ public abstract class ControlCenter {
 	 */
 	private static void checkSetting() {
 		synchronized (flag) {
-			while (flag.getValue() < PeerManagerImpl.getNoOfExistingPeer()
-					.getValue()) {
+			while (flag.getValue() < PeerManagerImpl.getNoOfExistingPeer().getValue()) {
 				try {
 					flag.wait();
 				} catch (InterruptedException ex) {
