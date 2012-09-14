@@ -2,6 +2,7 @@ package org.nzdis.fragme.peers;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Observable;
 import java.util.Random;
@@ -47,9 +48,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 	/** Member variables */
 	private boolean receiveMyOwnObjects = false;
-	private FlagBool viewAcceptedCalled = new FlagBool(false);
+	private FlagBool peerListReceived = new FlagBool(false);
 	private FlagInt otherPeersHaveMyObjectsCount = new FlagInt(0);
-	private static FlagInt noOfOtherPeers = null;
+	private static FlagInt noOfPeers = null;
 	//private Vector threads = new Vector();
 
 	/** private Address child */
@@ -74,8 +75,10 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private Address myAddr;
 	private Hashtable spaceAllocated = new Hashtable();
 	private Hashtable peerAddressToNameTable = new Hashtable();
+	private HashMap<Address, JoinThread> joinThreads = new HashMap<Address, JoinThread>(); 
 	private MessageContainer mc = new MessageContainer();
-	private FragMessage fragMsg = new FragMessage();
+	//init inside send()
+	//private FragMessage fragMsg = new FragMessage();
 
 	/** The transport channel used */
 	private JChannel channel;
@@ -87,7 +90,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/** check iterations for timeout (in ms) */
 	private final long timeBetweenActivationChecks = 200;
 	/** additional conservative wait to ensure connection is really established (in ms) */
-	private final long additionalWaitAfterConnect = 2000;
+	private final long additionalWaitAfterConnect = 0;
 	
 	/** the PushPullAdaptor used */
 	private PullPushAdapter adaptor;
@@ -125,8 +128,8 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * 
 	 * @return the number of existing peers
 	 */
-	public static FlagInt getNoOfExistingPeers() {
-		return noOfOtherPeers;
+	public static FlagInt getNoOfPeers() {
+		return noOfPeers;
 	}
 
 	/**
@@ -144,7 +147,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		 */
 		public JoinThread(Address addr) {
 			this.addr = addr;
-			this.setName("CheckThread for " + addr);
+			this.setName("JoinThread for " + addr);
 			this.start();
 		}
 
@@ -160,7 +163,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			// an unnamed peer (from peerAddressToNameTable). This cannot happen at startup - it only
 			// might happen when a new peer has joined, after it has had space allocated and before it's
 			// name has been resolved.
-			send(ControlCenter.NOTIFY, ControlCenter.REQUEST_PEER_NAME, addr);
+			//send(ControlCenter.NOTIFY, ControlCenter.REQUEST_PEER_NAME, addr);
 
 			// allocate space for the new peer
 			ControlCenter.getObjectManager().allocateSpaceForPeer(addr);
@@ -207,8 +210,20 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 				int prev_v = ControlCenter.flag.getValue();
 				ControlCenter.flag.setValue(prev_v + 1);
 				ControlCenter.flag.notifyAll();
+				joinThreads.remove(addr);
 			} // end synchronized(ControlCenter.flag)
 			return;
+		}
+		
+		public void kill() {
+			synchronized (otherPeersHaveMyObjectsCount) {
+				otherPeersHaveMyObjectsCount.notifyAll();
+			}
+			synchronized (ControlCenter.flag) {
+				System.err.println("Killing JoinThread that has not finished");
+				ControlCenter.flag.notifyAll();
+				joinThreads.remove(addr);
+			} // end synchronized(ControlCenter.flag)
 		}
 	}
 	
@@ -216,7 +231,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		System.out.printf("   Status (" + addr + "):\n");
 		System.out.printf("    - %s\n", s);
 		System.out.printf("    - ControlCenter.flag: %d\n", ((FlagInt)ControlCenter.flag).getValue());
-		System.out.printf("    - noOfOtherPeers: %d\n", this.noOfOtherPeers);
+		System.out.printf("    - noOfOtherPeers: %d\n", this.noOfPeers);
 		System.out.printf("    - otherPeerCount: %d\n", otherPeersHaveMyObjectsCount.getValue());
 		System.out.printf("    - members.size(): %d\n", members.size());
 		System.out.printf("    - spaceAllocated.size(): %d\n", spaceAllocated.size());
@@ -242,11 +257,11 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		 */
 		public void run() {
 			System.out.println("New Peer Fostering Thread started");
-			if (noOfOtherPeers.getValue() > 0) { // otherwise we are the first peer
+			if (noOfPeers.getValue() > 0) { // otherwise we are the first peer
 				Address peerToFosterMeAddr = null;
 				while (true) {
 					synchronized (members) {
-						int peerToFosterMeSeq = randomNumGenerator.nextInt(noOfOtherPeers.getValue());
+						int peerToFosterMeSeq = randomNumGenerator.nextInt(noOfPeers.getValue());
 						peerToFosterMeAddr = (Address) members.get(peerToFosterMeSeq);
 						if (!peerToFosterMeAddr.equals(myAddr)) {
 							members.notifyAll();
@@ -291,22 +306,24 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			ControlCenter.getObjectManager().setMyAddress(myAddr);
 			instance.peerAddressToNameTable.put(myAddr, instance.getMyPeerName());
 
-			synchronized (viewAcceptedCalled) {
-				while (viewAcceptedCalled.getValue() == false) {
+			// wait until viewAccepted has been called at least once - this gives us our
+			// initial list of peers
+			synchronized (peerListReceived) {
+				while (peerListReceived.getValue() == false) {
 					try {
-						viewAcceptedCalled.wait();
+						peerListReceived.wait();
 					} catch (InterruptedException ex) {
 						ex.printStackTrace();
 					}
 				} // end while
-			} // end synchronized(viewAcceptedCalled)
+			} // end synchronized(peerSetReceived)
 
 			/* broadcasting its peer name to other peers */
-			sendFragMessage(peerName, PEER_NAME, null);
+			//sendFragMessage(peerName, PEER_NAME, null);
 			
 			// TODO
 			synchronized (otherPeersHaveMyObjectsCount) {
-				while (otherPeersHaveMyObjectsCount.getValue() < noOfOtherPeers.getValue()) {
+				while (otherPeersHaveMyObjectsCount.getValue() < noOfPeers.getValue()) {
 					try {
 						//printStatus("waiting to receive objects from all peers ...", myAddr);
 						otherPeersHaveMyObjectsCount.wait();
@@ -420,7 +437,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * @param addr
 	 *            the address to send to (use null for multicasting)
 	 */
-	public void send(String performative, Object objectToSend, Address addr) {
+	public synchronized void send(String performative, Object objectToSend, Address addr) {
 		Serializable serialised = null;
 		if (objectToSend instanceof FMeObject) {
 			if(debug){
@@ -438,7 +455,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 						"Object asked to be sent through PM is not serializable");
 			}
 		}
-
+		FragMessage fragMsg = new FragMessage();
 		fragMsg.setContent(serialised);
 		fragMsg.setPerformative(performative);
 		Message msg = new Message(addr, myAddr, fragMsg);
@@ -502,7 +519,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * @param msg
 	 *            the message received
 	 */
-	public void receive(Message msg) {
+	public synchronized void receive(Message msg) {
 		Address senderAddr = msg.getSrc();
 		String s = senderAddr.toString();
 		String a = myAddr.toString();
@@ -636,11 +653,13 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			// this is a PEER_NAME notification
 			if (commandType.equals(PEER_NAME)) {
 				synchronized (peerAddressToNameTable) {
+					System.out.println("Received PEER_NAME from " + senderAddr);
 					if (peerAddressToNameTable.get(senderAddr) == null) {
-						System.out.println("Received PEER_NAME from " + senderAddr);
 						peerAddressToNameTable.put(senderAddr, msgContent);
-						peerAddressToNameTable.notifyAll();
+					} else {
+						System.err.println("Warning: received PEER_NAME duplicate (perhaps a new peer is using the address of an old peer)");
 					}
+					peerAddressToNameTable.notifyAll();
 				}
 			} else if (commandType.equals(REPLY_TO_BE_FOSTERED)) {
 				// this is a FOSTER_REQUEST_DENIED notification
@@ -741,13 +760,13 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			members.removeAllElements();
 			members.addAll(tmp);
 
-			noOfOtherPeers = new FlagInt(members.size() - 1);
+			noOfPeers = new FlagInt(members.size() - 1);
 		} // end synchronized(members)
 
-		synchronized (viewAcceptedCalled) {
-			viewAcceptedCalled.setValue(true);
-			viewAcceptedCalled.notifyAll();
-		} // end synchronized(viewAcceptedCalled)
+		synchronized (peerListReceived) {
+			peerListReceived.setValue(true);
+			peerListReceived.notifyAll();
+		} // end synchronized(peerListReceived)
 
 		if (joined_mbrs.size() > 0)
 			for (int i = 0; i < joined_mbrs.size(); i++)
@@ -786,9 +805,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private void memberJoined(Address addr) {
 		if (!addr.equals(myAddr)) {
 			System.out.println("Member " + addr + " joined!");
-			JoinThread newThread = new JoinThread(addr);
+			JoinThread newJoinThread = new JoinThread(addr);
 			// TO-DO later try not to hold reference to the thread
-			//threads.add(newThread);
+			joinThreads.put(addr, newJoinThread);
 		}
 	}
 
@@ -800,6 +819,11 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 */
 	private void memberLeft(Address addr) {
 		System.out.println("Member " + addr + " left!");
+		if (joinThreads.containsKey(addr)) {
+			System.err.println("Killing thread");
+			JoinThread joinThread = joinThreads.get(addr);
+			joinThread.kill();
+		}
 		if (addr.equals(peerImFostering)) {
 			peerImFostering = peerMyChildIsFostering;
 			if (!peerImFostering.equals(myAddr)) {

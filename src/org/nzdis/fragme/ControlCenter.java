@@ -191,7 +191,7 @@ public abstract class ControlCenter {
 			OM = ObjectManagerImpl.startObjectManager();
 			PM = PeerManagerImpl.startPeerManager(groupName, peerName);
 			boolean droppedOutBefore = PM.activate();
-			checkSetting();
+			checkPeersConnected();
 			return droppedOutBefore;
 		} catch (StartUpException e) {
 			System.out.println(e);
@@ -254,16 +254,17 @@ public abstract class ControlCenter {
 	 * @return the total number of peers
 	 */
 	public static int getNoOfPeers() {
-		return PeerManagerImpl.getNoOfExistingPeer().getValue();
+		return PeerManagerImpl.getNoOfPeers().getValue();
 	}
 
 	/**
 	 * Private method called by setUpConnections for synchronization with
 	 * PeerManager
 	 */
-	private static void checkSetting() {
+	private static void checkPeersConnected() {
 		synchronized (flag) {
-			while (flag.getValue() < PeerManagerImpl.getNoOfExistingPeer().getValue()) {
+			while (flag.getValue() < PeerManagerImpl.getNoOfPeers().getValue()) {
+				System.err.println("" + flag.getValue() + " " + PeerManagerImpl.getNoOfPeers().getValue());
 				try {
 					flag.wait();
 				} catch (InterruptedException ex) {
