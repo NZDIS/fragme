@@ -27,7 +27,14 @@ import org.jgroups.Address;
  */
 public abstract class ControlCenter {
 
-	public static boolean debug = false;
+	/** Print debug information about JGroup channel establishment */
+	public static boolean DEBUG_CHANNEL_SETUP = true;
+	/** Print debug about synchronization of peers with group */
+	public static boolean DEBUG_SYNCHRONIZATION = true;
+	/** Print debug about send operations (send, receive, serialization) */
+	public static boolean DEBUG_SENDING = false;
+	/** Print debug about object creation and reuse in FragMeFactory */
+	public static boolean DEBUG_OBJECT_MANAGEMENT = false;
 	
 	/**
 	 * Static instance of this peer's PeerManager

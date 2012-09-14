@@ -17,7 +17,7 @@ import org.nzdis.fragme.ControlCenter;
 public abstract class FragMeFactory {
 	// all member are kept static as they are only needed once.
 
-	private static boolean debug = ControlCenter.debug;
+	private static boolean DEBUG_OBJECT_MANAGEMENT = ControlCenter.DEBUG_OBJECT_MANAGEMENT;
 	
 	/**
 	 * for each key (FMEObjectName as string) this Hashtable stores all free
@@ -206,7 +206,7 @@ public abstract class FragMeFactory {
 			FMeObject existObject = OM.lookup(object);
 
 			if (existObject == null) {
-				if(debug){
+				if(DEBUG_OBJECT_MANAGEMENT){
 					System.out.println("Creating a new object!");
 				}
 				object.deserialize(serObject);
@@ -214,7 +214,7 @@ public abstract class FragMeFactory {
 				OM.addObject(object);
 				return object;
 			} else {
-				if(debug){
+				if(DEBUG_OBJECT_MANAGEMENT){
 					System.out.println("Reusing an existing object!");
 				}
 				existObject.deserialize(serObject);

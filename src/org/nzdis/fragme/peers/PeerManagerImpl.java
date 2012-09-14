@@ -35,7 +35,9 @@ import org.jgroups.blocks.PullPushAdapter;
 public class PeerManagerImpl extends Observable implements PeerManager,
 		MessageListener, MembershipListener, ChannelListener {
 	
-	private static boolean debug = ControlCenter.debug;
+	public static boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
+	public static boolean DEBUG_SYNCHRONIZATION = ControlCenter.DEBUG_SYNCHRONIZATION;
+	public static boolean DEBUG_SENDING = ControlCenter.DEBUG_SENDING;
 
 	/** the singleton instance of PeerManagerImpl */
 	private static PeerManagerImpl instance;
@@ -51,7 +53,6 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private FlagBool peerListReceived = new FlagBool(false);
 	private FlagInt otherPeersHaveMyObjectsCount = new FlagInt(0);
 	private static FlagInt noOfPeers = null;
-	//private Vector threads = new Vector();
 
 	/** private Address child */
 	private Address peerImFostering;
@@ -77,8 +78,6 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private Hashtable peerAddressToNameTable = new Hashtable();
 	private HashMap<Address, JoinThread> joinThreads = new HashMap<Address, JoinThread>(); 
 	private MessageContainer mc = new MessageContainer();
-	//init inside send()
-	//private FragMessage fragMsg = new FragMessage();
 
 	/** The transport channel used */
 	private JChannel channel;
@@ -158,7 +157,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		public void run() {
 			// first send my peerName to other peer
 			sendFragMessage(peerName, PEER_NAME, addr);
-			System.out.println("Sent PEER_NAME to " + addr);
+			if(DEBUG_SYNCHRONIZATION){
+				System.out.println("Sent PEER_NAME to " + addr);
+			}
 			// Request peer name early to prevent the situation where the application wants the name for 
 			// an unnamed peer (from peerAddressToNameTable). This cannot happen at startup - it only
 			// might happen when a new peer has joined, after it has had space allocated and before it's
@@ -168,7 +169,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			// allocate space for the new peer
 			ControlCenter.getObjectManager().allocateSpaceForPeer(addr);
 			send(ControlCenter.NOTIFY, ControlCenter.SPACE_ALLOCATED_FOR_NEW_PEER, addr);
-			System.out.println("Sent SPACE_ALLOCATED_FOR_NEW_PEER to " + addr);
+			if(DEBUG_SYNCHRONIZATION){
+				System.out.println("Sent SPACE_ALLOCATED_FOR_NEW_PEER to " + addr);
+			}
 
 			// wait until we are told that the new peer has allocated space for us
 			synchronized (spaceAllocated) {
@@ -204,7 +207,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			// TODO
 			//printStatus("sent ControlCenter.OBJECT_SENT_TO_NEW_PEER to " + addr, addr);
 			send(ControlCenter.NOTIFY, ControlCenter.OBJECT_SENT_TO_NEW_PEER, addr);
-			System.out.println("Sent OBJECT_SENT_TO_NEW_PEER to " + addr);
+			if(DEBUG_SYNCHRONIZATION){
+				System.out.println("Sent OBJECT_SENT_TO_NEW_PEER to " + addr);
+			}
 
 			synchronized (ControlCenter.flag) {
 				int prev_v = ControlCenter.flag.getValue();
@@ -334,8 +339,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 				} // end while
 			} // end synchronized(otherPeerCount)
 
-			PeerFosteringThread newThread = new PeerFosteringThread();
-			//threads.add(newThread);
+			new PeerFosteringThread();
 			
 			long expiredTime = 0;
 			while(!connected && expiredTime < activationTimeOut){
@@ -353,8 +357,6 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		}
 
 		return receiveMyOwnObjects;
-		// peerFosterForNewPeer();
-
 	}
 
 	/**
@@ -440,13 +442,13 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public synchronized void send(String performative, Object objectToSend, Address addr) {
 		Serializable serialised = null;
 		if (objectToSend instanceof FMeObject) {
-			if(debug){
+			if(DEBUG_SENDING){
 				System.out.println("Object to send is instance of FMeObject");
 			}
 			serialised = (FMeObject) objectToSend;
 		} else {
 			if (objectToSend instanceof Serializable) {
-				if(debug){
+				if(DEBUG_SENDING){
 					System.out.println("Object to send is instance of Serializable");
 				}
 				serialised = (Serializable) objectToSend;
@@ -460,7 +462,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		fragMsg.setPerformative(performative);
 		Message msg = new Message(addr, myAddr, fragMsg);
 		try {
-			if(debug){
+			if(DEBUG_SENDING){
 				System.out.println("Sending message through channel");
 			}
 			channel.send(msg);
@@ -550,7 +552,6 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		afragMsg = null;
 		performative = null;
 		content = null;
-
 	}
 
 	/**
@@ -570,7 +571,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 */
 	private void receiveModify(Object content) {
 		if (content instanceof FMeObject) {
-			if(debug){
+			if(DEBUG_SENDING){
 				System.out.println("Receive: FMeObject");
 			}
 			FMeObject serialised = (FMeObject) content;
@@ -582,7 +583,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			this.notifyObservers(receivedObject);
 			receivedObject = null;
 		} else if (content instanceof FMeObjectReflection) {
-			if(debug){
+			if(DEBUG_SENDING){
 				System.out.println("Receive: FMeObjectReflection");
 			}
 			FMeObjectReflection refObject = (FMeObjectReflection) content;
@@ -653,7 +654,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			// this is a PEER_NAME notification
 			if (commandType.equals(PEER_NAME)) {
 				synchronized (peerAddressToNameTable) {
-					System.out.println("Received PEER_NAME from " + senderAddr);
+					if(DEBUG_SYNCHRONIZATION){
+						System.out.println("Received PEER_NAME from " + senderAddr);
+					}
 					if (peerAddressToNameTable.get(senderAddr) == null) {
 						peerAddressToNameTable.put(senderAddr, msgContent);
 					} else {
@@ -666,7 +669,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 				peerImFostering = (Address) msgContent;
 				sendFragMessage("", REQUEST_TO_FOSTER, peerImFostering);
 			} else if (commandType.equals(REPLY_TO_FOSTER)) {
-				System.out.println("received REPLY_TO_FOSTER");
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received REPLY_TO_FOSTER");
+				}
 				synchronized (fosterResult) {
 					peerMyChildIsFostering = (Address) msgContent;
 					fosterResult.setValue(true);
@@ -683,7 +688,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 					peerImFostering = senderAddr;
 				}
 			} else if (commandType.equals(REQUEST_TO_FOSTER)) {
-				System.out.println("received REQUEST_TO_FOSTER");
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received REQUEST_TO_FOSTER");
+				}
 				sendFragMessage(peerImFostering, REPLY_TO_FOSTER, senderAddr);
 			}
 			commandType = null;
@@ -692,7 +699,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			String notification = (String) content;
 			// this is an OBJECT_SENT_TO_NEW_PEER notification
 			if (notification.equals(ControlCenter.OBJECT_SENT_TO_NEW_PEER)) {
-				System.out.println("Received OBJECT_SENT_TO_NEW_PEER from " + senderAddr);
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received OBJECT_SENT_TO_NEW_PEER from " + senderAddr);
+				}
 				// TODO
 				synchronized (otherPeersHaveMyObjectsCount) {
 					int prev_val = otherPeersHaveMyObjectsCount.getValue();
@@ -703,7 +712,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 				// this is a REQUEST_PEER_NAME notification
 				sendFragMessage(peerName, PEER_NAME, senderAddr);
 			} else if (notification.equals(ControlCenter.SPACE_ALLOCATED_FOR_NEW_PEER)) {
-				System.out.println("Received SPACE_ALLOCATED_FOR_NEW_PEER from " + senderAddr);
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received SPACE_ALLOCATED_FOR_NEW_PEER from " + senderAddr);
+				}
 				// this is a SPACE_ALLOCATED_FOR_NEW_PEER notification
 				synchronized (spaceAllocated) {
 					if (spaceAllocated.get(senderAddr) == null) {
@@ -820,7 +831,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private void memberLeft(Address addr) {
 		System.out.println("Member " + addr + " left!");
 		if (joinThreads.containsKey(addr)) {
-			System.err.println("Killing thread");
+			System.err.println("Killing synchronization thread for member " + addr + " (that did not fully synchronize).");
 			JoinThread joinThread = joinThreads.get(addr);
 			joinThread.kill();
 		}
@@ -858,7 +869,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 	@Override
 	public void channelConnected(Channel channel) {
-		if(debug){
+		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' connected.");
 		}
 		connected = true;
@@ -866,7 +877,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 	@Override
 	public void channelDisconnected(Channel channel) {
-		if(debug){
+		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' disconnected.");
 		}
 		connected = false;
@@ -874,7 +885,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 	@Override
 	public void channelClosed(Channel channel) {
-		if(debug){
+		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' closed.");
 		}
 		connected = false;
@@ -882,14 +893,14 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 	@Override
 	public void channelShunned() {
-		if(debug){
+		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' shunned.");
 		}
 	}
 
 	@Override
 	public void channelReconnected(Address addr) {
-		if(debug){
+		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' reconnected.");
 		}
 		connected = true;
