@@ -2,7 +2,6 @@ package org.nzdis.fragme.peers;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Observable;
 import java.util.Random;
@@ -51,8 +50,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/** Member variables */
 	private boolean receiveMyOwnObjects = false;
 	private FlagBool peerListReceived = new FlagBool(false);
-	private FlagInt otherPeersHaveMyObjectsCount = new FlagInt(0);
-	private static FlagInt noOfPeers = null;
+	private static FlagInt noOfPeers = new FlagInt(0);
 
 	/** private Address child */
 	private Address peerImFostering;
@@ -74,9 +72,10 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private Vector members = new Vector();
 	/** The address of the current peer */
 	private Address myAddr;
-	private Hashtable spaceAllocated = new Hashtable();
-	private Hashtable peerAddressToNameTable = new Hashtable();
-	private HashMap<Address, JoinThread> joinThreads = new HashMap<Address, JoinThread>(); 
+	private Hashtable<Address, String> peerAddressToNameTable = new Hashtable<Address, String>();
+	private Hashtable<Address, FlagBool> spaceForMeHasBeenAllocated = new Hashtable<Address, FlagBool>();
+	private Hashtable<Address, FlagBool> peersWhichHaveSentObjects = new Hashtable<Address, FlagBool>();
+	private Hashtable<Address, JoinThread> joinThreads = new Hashtable<Address, JoinThread>(); 
 	private MessageContainer mc = new MessageContainer();
 
 	/** The transport channel used */
@@ -137,6 +136,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 */
 	class JoinThread extends Thread {
 		Address addr;
+		boolean isRunning = true;
 
 		/**
 		 * Constructor that parses in an address, and starts up the thread
@@ -155,93 +155,96 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		 * allocate space for the peer
 		 */
 		public void run() {
-			// first send my peerName to other peer
+			// Send peer name early to prevent the situation where the application wants the name for 
+			// an unnamed peer (from peerAddressToNameTable). This cannot happen at startup - it only
+			// might happen when a new peer has joined, after it has had space allocated and before it's
+			// name has been resolved.
 			sendFragMessage(peerName, PEER_NAME, addr);
 			if(DEBUG_SYNCHRONIZATION){
 				System.out.println("Sent PEER_NAME to " + addr);
 			}
-			// Request peer name early to prevent the situation where the application wants the name for 
-			// an unnamed peer (from peerAddressToNameTable). This cannot happen at startup - it only
-			// might happen when a new peer has joined, after it has had space allocated and before it's
-			// name has been resolved.
-			//send(ControlCenter.NOTIFY, ControlCenter.REQUEST_PEER_NAME, addr);
 
 			// allocate space for the new peer
 			ControlCenter.getObjectManager().allocateSpaceForPeer(addr);
-			send(ControlCenter.NOTIFY, ControlCenter.SPACE_ALLOCATED_FOR_NEW_PEER, addr);
+			send(ControlCenter.NOTIFY, ControlCenter.SPACE_HAS_BEEN_ALLOCATED, addr);
 			if(DEBUG_SYNCHRONIZATION){
-				System.out.println("Sent SPACE_ALLOCATED_FOR_NEW_PEER to " + addr);
+				System.out.println("Sent SPACE_HAS_BEEN_ALLOCATED to " + addr);
 			}
-
+			
 			// wait until we are told that the new peer has allocated space for us
-			synchronized (spaceAllocated) {
-				while (spaceAllocated.get(addr) == null) {
+			synchronized (spaceForMeHasBeenAllocated) {
+				while ((spaceForMeHasBeenAllocated.get(addr) == null) && isRunning) {
 					try {
-						//printStatus("spaceAllocated " + addr + " wait...", addr);
-						spaceAllocated.wait();
-						//printStatus("spaceAllocated " + addr + " finished", addr);
+						spaceForMeHasBeenAllocated.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
 			} // end of synchronized block
 			
-			// after the above block of code,space has been allocated for us by
-			// the new peer
-
 			// make sure we get the peer's name before we send objects to him
 			synchronized (peerAddressToNameTable) {
-				while (peerAddressToNameTable.get(addr) == null) {
+				while ((peerAddressToNameTable.get(addr) == null) && isRunning) {
 					try {
-						//printStatus("peerAddressToNameTable " + addr + " wait...", addr);
-						peerAddressToNameTable.wait(); // This might be notified by a different incoming address to name
-						//printStatus("peerAddressToNameTable " + addr + " finished", addr);
+						peerAddressToNameTable.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
+			} // end of synchronized block
+
+			if (isRunning) {
+				// send our objects to this peer, if we have any
+				ControlCenter.getObjectManager().sendObjectsToNewPeer(addr);
+	
+				// we need to signal that the objects have been sent
+				// (in case we didn't have any objects to send)
+				send(ControlCenter.NOTIFY, ControlCenter.OBJECTS_HAVE_BEEN_SENT, addr);
+				
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Sent OBJECTS_HAVE_BEEN_SENT to " + addr);
+				}
+				
+				synchronized (ControlCenter.allPeersHaveFinishedSetup) {
+					// remove this thread from the list so that it will be garbage collected
+					joinThreads.remove(addr);
+					// if there are no more threads in the list then signal
+					if (joinThreads.size() == 0) {
+						ControlCenter.allPeersHaveFinishedSetup.setValue(true);
+						ControlCenter.allPeersHaveFinishedSetup.notifyAll();
+					}
+				} // end synchronized(ControlCenter.allPeersHaveFinishedSetup)
 			}
-
-			ControlCenter.getObjectManager().sendObjectsToNewPeer(addr);
-
-			// TODO
-			//printStatus("sent ControlCenter.OBJECT_SENT_TO_NEW_PEER to " + addr, addr);
-			send(ControlCenter.NOTIFY, ControlCenter.OBJECT_SENT_TO_NEW_PEER, addr);
-			if(DEBUG_SYNCHRONIZATION){
-				System.out.println("Sent OBJECT_SENT_TO_NEW_PEER to " + addr);
-			}
-
-			synchronized (ControlCenter.flag) {
-				int prev_v = ControlCenter.flag.getValue();
-				ControlCenter.flag.setValue(prev_v + 1);
-				ControlCenter.flag.notifyAll();
-				joinThreads.remove(addr);
-			} // end synchronized(ControlCenter.flag)
+			
 			return;
 		}
 		
-		public void kill() {
-			synchronized (otherPeersHaveMyObjectsCount) {
-				otherPeersHaveMyObjectsCount.notifyAll();
-			}
-			synchronized (ControlCenter.flag) {
-				System.err.println("Killing JoinThread that has not finished");
-				ControlCenter.flag.notifyAll();
+		public void stopJoin() {
+			synchronized (ControlCenter.allPeersHaveFinishedSetup) {
+				// remove this thread from the list so that it will be garbage collected
 				joinThreads.remove(addr);
-			} // end synchronized(ControlCenter.flag)
+				
+				// signal that this thread is dying
+				isRunning = false;
+				// unstick spaceForMeHasBeenAllocated
+				synchronized (spaceForMeHasBeenAllocated) {
+					spaceForMeHasBeenAllocated.notifyAll();
+				}
+				// unstick peerAddressToNameTable
+				synchronized (peerAddressToNameTable) {
+					peerAddressToNameTable.notifyAll();
+				}
+				
+				// at this point, because isRunning is false, the run() method will skip to the end
+				//  there are no more threads in the list then signal
+				if (joinThreads.size() == 0) {
+					ControlCenter.allPeersHaveFinishedSetup.setValue(true);
+					ControlCenter.allPeersHaveFinishedSetup.notifyAll();
+				}
+			} // end synchronized(ControlCenter.allPeersHaveFinishedSetup)
 		}
 	}
 	
-	private synchronized void printStatus(String s, Address addr) {
-		System.out.printf("   Status (" + addr + "):\n");
-		System.out.printf("    - %s\n", s);
-		System.out.printf("    - ControlCenter.flag: %d\n", ((FlagInt)ControlCenter.flag).getValue());
-		System.out.printf("    - noOfOtherPeers: %d\n", this.noOfPeers);
-		System.out.printf("    - otherPeerCount: %d\n", otherPeersHaveMyObjectsCount.getValue());
-		System.out.printf("    - members.size(): %d\n", members.size());
-		System.out.printf("    - spaceAllocated.size(): %d\n", spaceAllocated.size());
-		System.out.printf("    - peerAddressToNameTable.size(): %s\n", peerAddressToNameTable.size());
-	}
 
 	/**
 	 * Member Class PeerFosteringThread, an instance of this thread should be
@@ -285,7 +288,11 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 						}
 					}
 				}
-			} // end if(noOfOtherPeers)
+			} else { // end if(noOfOtherPeers)
+				if (DEBUG_CHANNEL_SETUP) {
+					System.out.println("PeerFosteringThread.run(): We are the first peer");
+				}
+			}
 		}
 	}
 
@@ -303,16 +310,15 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			channel.setOpt(Channel.LOCAL, new Boolean(false));
 			channel.connect(groupName);
 
-			// activates the PullPushAdapter with MessageListener and
-			// MembershipListener
+			// activates the PullPushAdapter with MessageListener and MembershipListener
 			adaptor = new PullPushAdapter(channel, this, this);
 
 			myAddr = channel.getLocalAddress();
 			ControlCenter.getObjectManager().setMyAddress(myAddr);
 			instance.peerAddressToNameTable.put(myAddr, instance.getMyPeerName());
 
-			// wait until viewAccepted has been called at least once - this gives us our
-			// initial list of peers
+			// wait until viewAccepted has been called at least once.
+			// this gives us our initial list of peers
 			synchronized (peerListReceived) {
 				while (peerListReceived.getValue() == false) {
 					try {
@@ -323,21 +329,19 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 				} // end while
 			} // end synchronized(peerSetReceived)
 
-			/* broadcasting its peer name to other peers */
-			//sendFragMessage(peerName, PEER_NAME, null);
-			
-			// TODO
-			synchronized (otherPeersHaveMyObjectsCount) {
-				while (otherPeersHaveMyObjectsCount.getValue() < noOfPeers.getValue()) {
-					try {
-						//printStatus("waiting to receive objects from all peers ...", myAddr);
-						otherPeersHaveMyObjectsCount.wait();
-						//printStatus("waiting to receive objects from all peers finished", myAddr);
-					} catch (InterruptedException ex) {
-						ex.printStackTrace();
-					}
-				} // end while
-			} // end synchronized(otherPeerCount)
+			// wait until all peers have finished setup. If we have no peers (after 
+			// receiving our first peerList during the section above) then skip this 
+			if (noOfPeers.getValue() > 0) {
+				synchronized (ControlCenter.allPeersHaveFinishedSetup) {
+					while (!ControlCenter.allPeersHaveFinishedSetup.getValue()) {
+						try {
+							ControlCenter.allPeersHaveFinishedSetup.wait();
+						} catch (InterruptedException ex) {
+							ex.printStackTrace();
+						}
+					} // end while
+				} // end synchronized(otherPeerCount)
+			}
 
 			new PeerFosteringThread();
 			
@@ -646,38 +650,50 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 *            the address of the sender
 	 */
 	private void receiveNotify(Object content, Address senderAddr) {
-		// this notification is the reply of a REQUEST_TO_BE_FOSTERED or
-		// REQUEST_TO_FOSTER notification
 		if (content instanceof MessageContainer) {
 			String commandType = ((MessageContainer) content).getMessageType();
 			Object msgContent = ((MessageContainer) content).getContent();
-			// this is a PEER_NAME notification
+			
 			if (commandType.equals(PEER_NAME)) {
+				
 				synchronized (peerAddressToNameTable) {
 					if(DEBUG_SYNCHRONIZATION){
 						System.out.println("Received PEER_NAME from " + senderAddr);
 					}
+					// add the peer name to the table
 					if (peerAddressToNameTable.get(senderAddr) == null) {
-						peerAddressToNameTable.put(senderAddr, msgContent);
+						peerAddressToNameTable.put(senderAddr, (String)msgContent);
 					} else {
 						System.err.println("Warning: received PEER_NAME duplicate (perhaps a new peer is using the address of an old peer)");
 					}
+					// notify (even if we did not add to the table, the address might be being reused)
 					peerAddressToNameTable.notifyAll();
 				}
+				
 			} else if (commandType.equals(REPLY_TO_BE_FOSTERED)) {
-				// this is a FOSTER_REQUEST_DENIED notification
+				
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received REPLY_TO_BE_FOSTERED from " + senderAddr);
+				}
 				peerImFostering = (Address) msgContent;
 				sendFragMessage("", REQUEST_TO_FOSTER, peerImFostering);
+				
 			} else if (commandType.equals(REPLY_TO_FOSTER)) {
+				
 				if(DEBUG_SYNCHRONIZATION){
-					System.out.println("Received REPLY_TO_FOSTER");
+					System.out.println("Received REPLY_TO_FOSTER from " + senderAddr);
 				}
 				synchronized (fosterResult) {
 					peerMyChildIsFostering = (Address) msgContent;
 					fosterResult.setValue(true);
 					fosterResult.notifyAll();
 				}
+				
 			} else if (commandType.equals(REQUEST_TO_BE_FOSTERED)) {
+				
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received REQUEST_TO_BE_FOSTERED from " + senderAddr);
+				}
 				if (peerImFostering != null) {
 					sendFragMessage(peerImFostering, REPLY_TO_BE_FOSTERED, senderAddr);
 					peerMyChildIsFostering = peerImFostering;
@@ -687,44 +703,55 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 					peerMyChildIsFostering = myAddr;
 					peerImFostering = senderAddr;
 				}
+				
 			} else if (commandType.equals(REQUEST_TO_FOSTER)) {
+				
 				if(DEBUG_SYNCHRONIZATION){
-					System.out.println("Received REQUEST_TO_FOSTER");
+					System.out.println("Received REQUEST_TO_FOSTER from " + senderAddr);
 				}
 				sendFragMessage(peerImFostering, REPLY_TO_FOSTER, senderAddr);
+				
 			}
 			commandType = null;
 			msgContent = null;
 		} else {
 			String notification = (String) content;
-			// this is an OBJECT_SENT_TO_NEW_PEER notification
-			if (notification.equals(ControlCenter.OBJECT_SENT_TO_NEW_PEER)) {
+			if (notification.equals(ControlCenter.OBJECTS_HAVE_BEEN_SENT)) {
+				
 				if(DEBUG_SYNCHRONIZATION){
-					System.out.println("Received OBJECT_SENT_TO_NEW_PEER from " + senderAddr);
+					System.out.println("Received OBJECTS_HAVE_BEEN_SENT from " + senderAddr);
 				}
-				// TODO
-				synchronized (otherPeersHaveMyObjectsCount) {
-					int prev_val = otherPeersHaveMyObjectsCount.getValue();
-					otherPeersHaveMyObjectsCount.setValue(prev_val + 1);
-					otherPeersHaveMyObjectsCount.notifyAll();
+				// record this peer in the table and notify that it has been updated
+				synchronized (peersWhichHaveSentObjects) {
+					if (peersWhichHaveSentObjects.get(senderAddr) == null) {
+						peersWhichHaveSentObjects.put(senderAddr, new FlagBool(true));
+					}
+					peersWhichHaveSentObjects.notifyAll();
 				} // end synchronized(otherPeersHaveMyObjectsCount)
+				
 			} else if (notification.equals(ControlCenter.REQUEST_PEER_NAME)) {
-				// this is a REQUEST_PEER_NAME notification
+				
+				if(DEBUG_SYNCHRONIZATION){
+					System.out.println("Received REQUEST_PEER_NAME from " + senderAddr);
+				}
+				// send our peer name
 				sendFragMessage(peerName, PEER_NAME, senderAddr);
-			} else if (notification.equals(ControlCenter.SPACE_ALLOCATED_FOR_NEW_PEER)) {
+				
+			} else if (notification.equals(ControlCenter.SPACE_HAS_BEEN_ALLOCATED)) {
+				
 				if(DEBUG_SYNCHRONIZATION){
 					System.out.println("Received SPACE_ALLOCATED_FOR_NEW_PEER from " + senderAddr);
 				}
-				// this is a SPACE_ALLOCATED_FOR_NEW_PEER notification
-				synchronized (spaceAllocated) {
-					if (spaceAllocated.get(senderAddr) == null) {
-						spaceAllocated.put(senderAddr, new FlagBool(true));
-						spaceAllocated.notifyAll();
+				// 
+				synchronized (spaceForMeHasBeenAllocated) {
+					if (spaceForMeHasBeenAllocated.get(senderAddr) == null) {
+						spaceForMeHasBeenAllocated.put(senderAddr, new FlagBool(true));
 					}
+					spaceForMeHasBeenAllocated.notifyAll();
 				} // end synchronized(spaceAllocated)
-				// TODO 
-			} // end else if (notification.equals(...))
-		} // if else (content instanceof Address)
+				
+			}
+		}
 	}
 
 	/*
@@ -771,7 +798,8 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			members.removeAllElements();
 			members.addAll(tmp);
 
-			noOfPeers = new FlagInt(members.size() - 1);
+			// record how many peers (excluding ourselves) we have (for fast lookup)
+			noOfPeers.setValue(members.size() - 1);
 		} // end synchronized(members)
 
 		synchronized (peerListReceived) {
@@ -816,9 +844,14 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	private void memberJoined(Address addr) {
 		if (!addr.equals(myAddr)) {
 			System.out.println("Member " + addr + " joined!");
-			JoinThread newJoinThread = new JoinThread(addr);
-			// TO-DO later try not to hold reference to the thread
-			joinThreads.put(addr, newJoinThread);
+			// update ControlCenter.allPeersHaveFinishedSetup to indicate that there is 
+			// a peer which has not completed setup and start a new thread to 
+			// join to this address
+			synchronized (ControlCenter.allPeersHaveFinishedSetup) {
+				ControlCenter.allPeersHaveFinishedSetup.setValue(false);
+				ControlCenter.allPeersHaveFinishedSetup.notifyAll();
+				joinThreads.put(addr, new JoinThread(addr));
+			}
 		}
 	}
 
@@ -830,10 +863,12 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 */
 	private void memberLeft(Address addr) {
 		System.out.println("Member " + addr + " left!");
-		if (joinThreads.containsKey(addr)) {
+		// if we are still trying to establish a connection to this peer then stop the thread
+		JoinThread joinThread = joinThreads.get(addr);
+		if (joinThread != null) {
 			System.err.println("Killing synchronization thread for member " + addr + " (that did not fully synchronize).");
-			JoinThread joinThread = joinThreads.get(addr);
-			joinThread.kill();
+			joinThread.stopJoin();
+			joinThread = null;
 		}
 		if (addr.equals(peerImFostering)) {
 			peerImFostering = peerMyChildIsFostering;

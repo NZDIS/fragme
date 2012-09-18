@@ -3,6 +3,7 @@ package org.nzdis.fragme;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Hashtable;
 import java.util.Observer;
 import java.util.Vector;
 import org.nzdis.fragme.exceptions.StartUpException;
@@ -10,6 +11,7 @@ import org.nzdis.fragme.factory.FragMeFactory;
 import org.nzdis.fragme.objects.Message;
 import org.nzdis.fragme.objects.ObjectManagerImpl;
 import org.nzdis.fragme.peers.PeerManagerImpl;
+import org.nzdis.fragme.peers.TypeWrappers.FlagBool;
 import org.nzdis.fragme.peers.TypeWrappers.FlagInt;
 import org.jgroups.Address;
 
@@ -59,7 +61,7 @@ public abstract class ControlCenter {
 	 * This message content is used to notify peers of the completion of sending
 	 * an object to a new peer
 	 */
-	public static final String OBJECT_SENT_TO_NEW_PEER = "OBJECT_SENT_TO_NEW_PEER";
+	public static final String OBJECTS_HAVE_BEEN_SENT = "OBJECTS_HAVE_BEEN_SENT";
 
 	/**
 	 * This message content is used to notify peers of sending peername.
@@ -70,7 +72,7 @@ public abstract class ControlCenter {
 	 * This message content is used to notify peers of the completion of a space
 	 * allocation event
 	 */
-	public static final String SPACE_ALLOCATED_FOR_NEW_PEER = "SPACE_ALLOCATED_FOR_NEW_PEER";
+	public static final String SPACE_HAS_BEEN_ALLOCATED = "SPACE_HAS_BEEN_ALLOCATED";
 
 	/**
 	 * The following five fields denote different types of messages that can be
@@ -85,7 +87,7 @@ public abstract class ControlCenter {
 	/**
 	 * Static flag used for synchronization with the PeerManager at startup time
 	 */
-	public static final FlagInt flag = new FlagInt(0);
+	public static final FlagBool allPeersHaveFinishedSetup = new FlagBool(false);
 
 	/**
 	 * Gets ObjectManager of this ControlCenter
@@ -269,18 +271,19 @@ public abstract class ControlCenter {
 	 * PeerManager
 	 */
 	private static void checkPeersConnected() {
-		synchronized (flag) {
-			while (flag.getValue() < PeerManagerImpl.getNoOfPeers().getValue()) {
-				System.err.println("" + flag.getValue() + " " + PeerManagerImpl.getNoOfPeers().getValue());
-				try {
-					flag.wait();
-				} catch (InterruptedException ex) {
-					System.out.println("Interrupted");
-				}
-			} // end while
-		} // end synchronized
+		if (getNoOfPeers() > 0) {
+			synchronized (allPeersHaveFinishedSetup) {
+				while (!allPeersHaveFinishedSetup.getValue()) {
+					try {
+						allPeersHaveFinishedSetup.wait();
+					} catch (InterruptedException ex) {
+						System.out.println("Interrupted");
+					}
+				} // end while
+			} // end synchronized
+		}
 	}
-
+	
 	/**
 	 * Closes connections by stopping peer and object managers
 	 * 
