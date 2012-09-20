@@ -7,19 +7,33 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 
+/**
+ * 
+ * Class containing network-related functionality to obtain relevant network 
+ * address according to user-specified preferences (e.g. interface, protocol type, scope).
+ * 
+ * @author Nathan D. Lewis 
+ * @version 0.1 (20th September 2012)
+ *
+ */
 public class NetworkUtils {
 
 /**
 * Returns the address of the current host, which satisfies name, protocol and scope.
 */
     public static boolean debugGetNonLoopbackAddress = false;
+    /** IP protocol versions */
     public static final String IPV4 = "IPV4";
     public static final String IPV6 = "IPV6";
+    /** IPv6 scopes */
     public static final String SCOPE_LINK_LOCAL = "SCOPE_LINK_LOCAL";
     public static final String SCOPE_SITE_LOCAL = "SCOPE_SITE_LOCAL";
     public static final String SCOPE_GLOBAL = "SCOPE_GLOBAL";
+    /** default interface to be used */
     public static final String DEFAULT_INTERFACE_NAME = null;
+    /** default IP protocol to be used */
     public static final String DEFAULT_PROTOCOL = IPV4;
+    /** default IPv6 scope to be used (if address type IPV6 is chosen) */
     public static final String DEFAULT_SCOPE = SCOPE_LINK_LOCAL;
     
     /**
@@ -86,7 +100,7 @@ public class NetworkUtils {
 				intface = NetworkInterface.getByName(interfaceName);
 			} catch (SocketException e) {
 				intface = null;
-				System.err.println("NetworkInterface " + interfaceName + " was not found");
+				System.err.println("NetworkInterface " + interfaceName + " was not found!");
 				return null;
 			}
 			return (getNonLoopbackAddress(intface, protocol, scope));
@@ -97,7 +111,7 @@ public class NetworkUtils {
 			try {
 				interfacesEnumerator = NetworkInterface.getNetworkInterfaces();
 			} catch (SocketException e) {
-				System.err.println("A problem occurred when trying to obtain the list of available NetworkInterfaces");
+				System.err.println("A problem occurred when trying to obtain the list of available NetworkInterfaces.");
 			}
 			while (interfacesEnumerator.hasMoreElements()) {
 				// Check each interface
@@ -124,9 +138,9 @@ public class NetworkUtils {
 		String address = null;
 		
 		Class<?> protocolClass;
-		if (protocol.toUpperCase().equals("IPV4")) {
+		if (protocol.toUpperCase().equals(IPV4)) {
 			protocolClass = Inet4Address.class;
-		} else if (protocol.toUpperCase().equals("IPV6")) {
+		} else if (protocol.toUpperCase().equals(IPV6)) {
 			protocolClass = Inet6Address.class;
 		} else {
 			protocolClass = null;

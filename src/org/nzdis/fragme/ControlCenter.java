@@ -26,6 +26,7 @@ import org.jgroups.Address;
  * 
  * @author Mengqiu Wang, Heiko Wolf, Morgan Bruce, Frank Wu
  * @refactored Morgan Bruce, Frank Wu 14/7/2008 - 17/7/2008
+ * @refactored Nathan D. Lewis, Christopher Frantz - September 2012
  */
 public abstract class ControlCenter {
 

@@ -30,6 +30,7 @@ import org.jgroups.blocks.PullPushAdapter;
  * 
  * @author Mengqiu Wang, Heiko Wolf
  * @refactored Morgan Bruce, Frank Wu 1/8/2008
+ * @refactored Nathan D. Lewis, Christopher Frantz - September 2012
  */
 public class PeerManagerImpl extends Observable implements PeerManager,
 		MessageListener, MembershipListener, ChannelListener {
