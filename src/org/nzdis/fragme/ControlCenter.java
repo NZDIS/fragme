@@ -162,7 +162,6 @@ public abstract class ControlCenter {
 	 * @return true if the peer has existed before, return false otherwise
 	 */
 	public static boolean setUpConnections(String groupName) {
-		// try {
 		System.out.println("Please enter your peer name");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		String peerName = null;
@@ -179,7 +178,11 @@ public abstract class ControlCenter {
 			}
 		}
 
-		return setUpConnections(groupName, peerName);
+		return setUpConnections(groupName, peerName, null);
+	}
+	
+	public static boolean setUpConnections(String groupName, String peerName) {
+		return setUpConnections(groupName, peerName, null);
 	}
 
 	/**
@@ -192,10 +195,15 @@ public abstract class ControlCenter {
 	 *            group name to initialise
 	 * @param peerName
 	 *            peer name to initialise
+	 * @param bindAddress
+	 * 		      address to bind to
 	 * 
 	 * @return true if the peer has existed before, return false otherwise
 	 */
-	public static boolean setUpConnections(String groupName, String peerName) {
+	public static boolean setUpConnections(String groupName, String peerName, String bindAddress) {
+		if ((bindAddress != null) && (bindAddress.length() > 0)) {
+			System.setProperty("UDP.bind_addr", bindAddress);
+		}
 		try {
 			OM = ObjectManagerImpl.startObjectManager();
 			PM = PeerManagerImpl.startPeerManager(groupName, peerName);
@@ -206,7 +214,6 @@ public abstract class ControlCenter {
 			System.out.println(e);
 			return true;
 		}
-
 	}
 
 	/**

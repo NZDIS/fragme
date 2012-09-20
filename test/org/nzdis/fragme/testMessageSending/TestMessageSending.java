@@ -17,7 +17,8 @@ import junit.framework.TestCase;
  */
 public class TestMessageSending extends TestCase {
 
-	static final Integer delay = 8000;
+	static final Integer startupDelay = 5000;
+	static final Integer waitForMessageDelay = 10000;
 	static String path = "java -jar ";
 	
 	static {
@@ -68,13 +69,13 @@ public class TestMessageSending extends TestCase {
 	public void testSendMessage() throws InterruptedException, IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for startup " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for startup finished");
 		Runtime.getRuntime().exec(path + " testSendMessage");
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for message " + waitForMessageDelay + "ms");
+		Thread.sleep(waitForMessageDelay);
+		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",
@@ -95,13 +96,13 @@ public class TestMessageSending extends TestCase {
 			IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for startup " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for startup finished");
 		Runtime.getRuntime().exec(path + " testSendMessageWithRecipient > out.txt");
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for message " + waitForMessageDelay + "ms");
+		Thread.sleep(waitForMessageDelay);
+		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",
@@ -122,13 +123,13 @@ public class TestMessageSending extends TestCase {
 			IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for startup " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for startup finished");
 		Runtime.getRuntime().exec(path + " testSendMessageWithType");
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for message " + waitForMessageDelay + "ms");
+		Thread.sleep(waitForMessageDelay);
+		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",
@@ -149,13 +150,13 @@ public class TestMessageSending extends TestCase {
 			throws InterruptedException, IOException {
 		Client1 c1 = new Client1();
 		c1.start();
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for startup " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for startup finished");
 		Runtime.getRuntime().exec(path + " testSendMessageWithRecipientAndType");
-		System.out.println("waiting for " + delay + "ms");
-		Thread.sleep(delay);
-		System.out.println(delay + "ms up");
+		System.out.println("waiting for message " + waitForMessageDelay + "ms");
+		Thread.sleep(waitForMessageDelay);
+		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
 		assertEquals("The sender of the message received is incorrect", "c2",

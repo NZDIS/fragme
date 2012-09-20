@@ -15,7 +15,8 @@ import org.nzdis.fragme.objects.Message;
  */
 public class Client2 {
 	
-	private static final Integer delay = 3000;
+	private static final Integer startupDelay = 5000;
+	private static final Integer shutdownDelay = 5000;
 	
 	/**
 	 * Connects to the framework and sends messages to other peers
@@ -33,7 +34,7 @@ public class Client2 {
 			testName = args[0];
 		}
 		//System.out.println("waiting for " + delay + "ms");
-		//Thread.sleep(delay);
+		Thread.sleep(startupDelay);
 		//System.out.println(delay + "ms up");
 		if(testName != null){
 			if(testName.equals("testSendMessage")){
@@ -41,28 +42,34 @@ public class Client2 {
 				 * send message
 				 */
 				ControlCenter.sendMessage("hello");
+				System.out.println("Sent message for test " + testName);
 			} else if(testName.equals("testSendMessageWithRecipient")){
 				/**
 				 * send message with recipient
 				 */
 				ControlCenter.sendMessage(recipients, "hello");
+				System.out.println("Sent message for test " + testName);
 			} else if(testName.equals("testSendMessageWithType")){
 				/**
 				 * send message with type
 				 */
 				ControlCenter.sendMessage("hello", "type1");
+				System.out.println("Sent message for test " + testName);
 			} else if(testName.equals("testSendMessageWithRecipientAndType")){
 				/**
 				 * send message with recipients and type
 				 */
 				ControlCenter.sendMessage(recipients,"hello","type1");
+				System.out.println("Sent message for test " + testName);
+			} else {
+				System.out.println("Send nothing for test " + testName);
+				//shutdown after 3 seconds
 			}
-			System.out.println("Sent message for test " + testName);
 		} else {
 			System.out.println("No valid test parameter specified");
 		}
 		ControlCenter.closeUpConnections();
-		Thread.sleep(delay);
+		Thread.sleep(shutdownDelay);
 		//System.exit(0);
 	}
 }
