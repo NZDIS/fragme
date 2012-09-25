@@ -35,9 +35,9 @@ import org.jgroups.blocks.PullPushAdapter;
 public class PeerManagerImpl extends Observable implements PeerManager,
 		MessageListener, MembershipListener, ChannelListener {
 	
-	public static boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
-	public static boolean DEBUG_SYNCHRONIZATION = ControlCenter.DEBUG_SYNCHRONIZATION;
-	public static boolean DEBUG_SENDING = ControlCenter.DEBUG_SENDING;
+	public static final boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
+	public static final boolean DEBUG_SYNCHRONIZATION = ControlCenter.DEBUG_SYNCHRONIZATION;
+	public static final boolean DEBUG_SENDING = ControlCenter.DEBUG_SENDING;
 
 	/** the singleton instance of PeerManagerImpl */
 	private static PeerManagerImpl instance;
