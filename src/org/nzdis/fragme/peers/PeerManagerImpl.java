@@ -265,7 +265,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		 * Starts the thread if there are other peers in the system
 		 */
 		public void run() {
-			System.out.println("New Peer Fostering Thread started");
+			if (DEBUG_CHANNEL_SETUP) {
+				System.out.println("New Peer Fostering Thread started");
+			}
 			if (noOfPeers.getValue() > 0) { // otherwise we are the first peer
 				Address peerToFosterMeAddr = null;
 				while (true) {

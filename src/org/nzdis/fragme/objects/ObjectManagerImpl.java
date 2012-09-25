@@ -352,6 +352,7 @@ public class ObjectManagerImpl implements ObjectManager {
 		synchronized (storageForOtherPeers) {
 			if (storageForOtherPeers.get(object.getOwnerAddr()) == null) {
 				System.err.println("not allocated memory for peer yet: " + object.getOwnerAddr());
+				return;
 			}
 			ObjectStorageForPeer peerStorage = (ObjectStorageForPeer) storageForOtherPeers.get(object.getOwnerAddr());
 			peerStorage.addObject(object);
