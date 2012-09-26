@@ -110,7 +110,7 @@ public interface ObjectManager {
 	 * @param object
 	 *            the received changed object
 	 */
-	public abstract void receiveChange(FMeObject object);
+	public abstract void receiveChange(FMeObject object, Address fromAddress);
 
 	/**
 	 * This method adds an object into the storage of the OM, for both own

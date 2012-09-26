@@ -410,10 +410,17 @@ public class ObjectManagerImpl implements ObjectManager {
 		}
 	}
 
-	public void receiveChange(FMeObject object) {
+	public void receiveChange(FMeObject object, Address fromAddress) {
+		// If I received a change for an object I own then I will transmit this change to 
+		// all peers.
 		if (object.getOwnerAddr().equals(myAddr)) {
-			ControlCenter.getPeerManager().send(ControlCenter.MODIFY, object,
-					null);
+			// If you want to exclude the address from which a change was received then
+			// you need to construct a vector of all addresses minus the changer and pass
+			// it here, instead of "null"
+			// At some point in the future, if the network infrastructure changes, then 
+			// it may become possible to simply pass the "fromAddress" to be "excluded"
+			// from a broadcast.
+			ControlCenter.getPeerManager().send(ControlCenter.MODIFY, object, null);
 		}
 	}
 
