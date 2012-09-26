@@ -35,9 +35,9 @@ import org.jgroups.blocks.PullPushAdapter;
 public class PeerManagerImpl extends Observable implements PeerManager,
 		MessageListener, MembershipListener, ChannelListener {
 	
-	public static boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
-	public static boolean DEBUG_SYNCHRONIZATION = ControlCenter.DEBUG_SYNCHRONIZATION;
-	public static boolean DEBUG_SENDING = ControlCenter.DEBUG_SENDING;
+	public static final boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
+	public static final boolean DEBUG_SYNCHRONIZATION = ControlCenter.DEBUG_SYNCHRONIZATION;
+	public static final boolean DEBUG_SENDING = ControlCenter.DEBUG_SENDING;
 
 	/** the singleton instance of PeerManagerImpl */
 	private static PeerManagerImpl instance;
@@ -266,7 +266,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		 * Starts the thread if there are other peers in the system
 		 */
 		public void run() {
-			System.out.println("New Peer Fostering Thread started");
+			if (DEBUG_CHANNEL_SETUP) {
+				System.out.println("New Peer Fostering Thread started");
+			}
 			if (noOfPeers.getValue() > 0) { // otherwise we are the first peer
 				Address peerToFosterMeAddr = null;
 				while (true) {

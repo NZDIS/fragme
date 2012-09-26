@@ -20,6 +20,7 @@ import org.jgroups.Address;
  * 
  * @author Mengqiu Wang, Heiko Wolf, Morgan Bruce, Frank Wu
  * @refactored Morgan Bruce 16/7/2008, Frank Wu 8/8/2008 Go BeiJing
+ * @refactored Nathan D. Lewis, Christopher Frantz - September 2012
  */
 public class ObjectManagerImpl implements ObjectManager {
 
@@ -47,11 +48,11 @@ public class ObjectManagerImpl implements ObjectManager {
 	 * Object storage for its own objects
 	 */
 	private ObjectStorageForPeer ownObjects = new ObjectStorageForPeer();
-
+	
 	/**
-	 * A temporary Vector holds all the objects in the system
+	 * Default filename for serialising objects to disk.
 	 */
-	//private Vector allObjects = new Vector();
+	public final String DEFAULT_OBJECT_STORAGE_FILENAME = "objectsOnDisk.txt";
 
 	/**
 	 * Default constructor
@@ -215,13 +216,14 @@ public class ObjectManagerImpl implements ObjectManager {
 	}
 
 	/**
-	 * Saves an object to the file objectsOnDisk.txt
+	 * Saves an object to the file name specified 
+	 * in ObjectManagerImpl.DEFAULT_OBJECT_STORAGE_FILENAME.
 	 * 
 	 * @param object
 	 *            the object to be saved to disk
 	 */
 	public void serializeToDisk(Object object) throws IOException {
-		serializeToDisk(object, "objectsOnDisk.txt");
+		serializeToDisk(object, DEFAULT_OBJECT_STORAGE_FILENAME);
 	}
 
 	/**
@@ -244,13 +246,15 @@ public class ObjectManagerImpl implements ObjectManager {
 	}
 
 	/**
-	 * Returns a vector of objects of a class retrieved from objectsOnDisk.txt
+	 * Returns a vector of objects of a class retrieved from file specified 
+	 * by ObjectManagerImpl.DEFAULT_OBJECT_STORAGE_FILENAME.
 	 * 
-	 * @return a vector of objects of a class retrieved from objectsOnDisk.txt
+	 * @return a vector of objects of a class retrieved from file specified 
+	 * by ObjectManagerImpl.DEFAULT_OBJECT_STORAGE_FILENAME.
 	 */
 	public Vector serializeFromDisk(Class className) throws IOException,
 			ClassNotFoundException {
-		return serializeFromDisk(className, "objectsOnDisk.txt");
+		return serializeFromDisk(className, DEFAULT_OBJECT_STORAGE_FILENAME);
 	}
 
 	/**
@@ -352,6 +356,7 @@ public class ObjectManagerImpl implements ObjectManager {
 		synchronized (storageForOtherPeers) {
 			if (storageForOtherPeers.get(object.getOwnerAddr()) == null) {
 				System.err.println("not allocated memory for peer yet: " + object.getOwnerAddr());
+				return;
 			}
 			ObjectStorageForPeer peerStorage = (ObjectStorageForPeer) storageForOtherPeers.get(object.getOwnerAddr());
 			peerStorage.addObject(object);

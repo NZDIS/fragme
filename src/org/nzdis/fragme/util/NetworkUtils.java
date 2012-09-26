@@ -21,7 +21,7 @@ public class NetworkUtils {
 /**
 * Returns the address of the current host, which satisfies name, protocol and scope.
 */
-    public static boolean debugGetNonLoopbackAddress = false;
+    public static final boolean debugGetNonLoopbackAddress = false;
     /** IP protocol versions */
     public static final String IPV4 = "IPV4";
     public static final String IPV6 = "IPV6";
