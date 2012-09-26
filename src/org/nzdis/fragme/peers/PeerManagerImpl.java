@@ -97,7 +97,8 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/** protocol stack */
 	private static String props = "UDP(mcast_addr=224.0.0.0;mcast_port=7500;ip_ttl=32;"
 			+ "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):"
-			+ "PING(timeout=2000;num_initial_members=3):"
+			+ "PING(timeout=4000;num_initial_members=3):"
+			+ "MERGE2:"
 			+ "FD_SOCK:"
 			+ "VERIFY_SUSPECT(timeout=1000):"
 			+ "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):"
@@ -903,7 +904,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		return groupName;
 	}
 
-	@Override
+	//@Override
 	public void channelConnected(Channel channel) {
 		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' connected.");
@@ -911,7 +912,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		connected = true;
 	}
 
-	@Override
+	//@Override
 	public void channelDisconnected(Channel channel) {
 		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' disconnected.");
@@ -919,7 +920,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		connected = false;
 	}
 
-	@Override
+	//@Override
 	public void channelClosed(Channel channel) {
 		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' closed.");
@@ -927,14 +928,14 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		connected = false;
 	}
 
-	@Override
+	//@Override
 	public void channelShunned() {
 		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' shunned.");
 		}
 	}
 
-	@Override
+	//@Override
 	public void channelReconnected(Address addr) {
 		if(DEBUG_CHANNEL_SETUP){
 			System.out.println("Channel '" + groupName + "' reconnected.");
