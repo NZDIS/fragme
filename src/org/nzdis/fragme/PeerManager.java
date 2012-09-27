@@ -21,7 +21,7 @@ public interface PeerManager {
 	 * receive an object change from other peers,calls ObjectManager's
 	 * receiveChange()
 	 */
-	public abstract void receive(FMeObject object);
+	public abstract void receive(FMeObject object, Address fromAddress);
 
 	/**
 	 * maps a peer address to a peer name

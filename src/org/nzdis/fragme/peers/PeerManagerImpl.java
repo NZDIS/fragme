@@ -431,10 +431,10 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * @param object
 	 *            changed object
 	 */
-	public void receive(FMeObject object) {
+	public void receive(FMeObject object, Address fromAddress) {
 		if (object.getOwnerAddr().equals(myAddr))
 			receiveMyOwnObjects = true;
-		ControlCenter.getObjectManager().receiveChange(object);
+		ControlCenter.getObjectManager().receiveChange(object, fromAddress);
 	}
 
 	/**
@@ -548,7 +548,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		if (performative.equals(ControlCenter.SYNCHRONIZE)) {
 			receiveSynchronise(content);
 		} else if (performative.equals(ControlCenter.MODIFY)) {
-			receiveModify(content);
+			receiveModify(content, senderAddr);
 		} else if (performative.equals(ControlCenter.DELETE)) {
 			receiveDelete(content, senderAddr);
 		} else if (performative.equals(ControlCenter.REQUEST_DELETE)) {
@@ -578,7 +578,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * @param content
 	 *            an object modified
 	 */
-	private void receiveModify(Object content) {
+	private void receiveModify(Object content, Address fromAddress) {
 		if (content instanceof FMeObject) {
 			if(DEBUG_SENDING){
 				System.out.println("Receive: FMeObject");
@@ -586,7 +586,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			FMeObject serialised = (FMeObject) content;
 			FMeObject receivedObject = FragMeFactory.deserialize(serialised);
 			serialised = null;
-			receive(receivedObject);
+			receive(receivedObject, fromAddress);
 			receivedObject.changedObject();
 			this.setChanged();
 			this.notifyObservers(receivedObject);
@@ -949,4 +949,5 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		}
 		connected = true;
 	}
+
 }
