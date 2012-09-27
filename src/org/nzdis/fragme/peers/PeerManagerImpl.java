@@ -20,6 +20,7 @@ import org.jgroups.Channel;
 import org.jgroups.ChannelListener;
 import org.jgroups.JChannel;
 import org.jgroups.MembershipListener;
+import org.jgroups.MergeView;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.View;
@@ -775,7 +776,11 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public synchronized void viewAccepted(View new_view) {
 		Vector joined_mbrs, left_mbrs, tmp;
 		Object tmp_mbr; // IpAddress
-
+		if(new_view instanceof MergeView)
+	        System.out.println("** MergeView=" + new_view);
+	    else
+	        System.out.println("** View=" + new_view);
+		
 		if (new_view == null)
 			return;
 		tmp = new_view.getMembers(); // Collection of IpAddress
