@@ -116,6 +116,9 @@ public class NetworkUtils {
 			while (interfacesEnumerator.hasMoreElements()) {
 				// Check each interface
 				intface = interfacesEnumerator.nextElement();
+				if (debugGetNonLoopbackAddress) {
+					System.out.println("NetworkInterface: " + intface.getDisplayName());
+				}
 				address = getNonLoopbackAddress(intface, protocol, scope);
 				if (address != null) {
 					return address;
