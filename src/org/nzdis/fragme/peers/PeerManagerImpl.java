@@ -98,8 +98,8 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/** protocol stack */
 	private static String props = "UDP(mcast_addr=224.0.0.0;mcast_port=7500;ip_ttl=32;"
 			+ "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):"
-			+ "PING(timeout=4000;num_initial_members=3):"
-			+ "MERGE2:"
+			+ "PING(timeout=3000;num_initial_members=3):"
+			+ "MERGEFAST:"
 			+ "FD_SOCK:"
 			+ "VERIFY_SUSPECT(timeout=1000):"
 			+ "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):"
@@ -776,9 +776,9 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public synchronized void viewAccepted(View new_view) {
 		Vector joined_mbrs, left_mbrs, tmp;
 		Object tmp_mbr; // IpAddress
-		if(new_view instanceof MergeView)
-	        System.out.println("** MergeView=" + new_view);
-	    else
+		if(new_view instanceof MergeView){
+		    System.out.println("** MergeView=" + new_view);
+		} else
 	        System.out.println("** View=" + new_view);
 		
 		if (new_view == null)
