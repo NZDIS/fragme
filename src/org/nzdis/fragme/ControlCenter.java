@@ -32,9 +32,9 @@ import org.jgroups.Address;
 public abstract class ControlCenter {
 
 	/** Print debug information about JGroup channel establishment */
-	public static final boolean DEBUG_CHANNEL_SETUP = true;
+	public static final boolean DEBUG_CHANNEL_SETUP = false;
 	/** Print debug about synchronization of peers with group */
-	public static final boolean DEBUG_SYNCHRONIZATION = true;
+	public static final boolean DEBUG_SYNCHRONIZATION = false;
 	/** Print debug about send operations (send, receive, serialization) */
 	public static final boolean DEBUG_SENDING = false;
 	/** Print debug about object creation and reuse in FragMeFactory */

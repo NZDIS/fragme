@@ -776,10 +776,12 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	public synchronized void viewAccepted(View new_view) {
 		Vector joined_mbrs, left_mbrs, tmp;
 		Object tmp_mbr; // IpAddress
-		if(new_view instanceof MergeView){
-		    System.out.println("** MergeView=" + new_view);
-		} else
-	        System.out.println("** View=" + new_view);
+		if(DEBUG_CHANNEL_SETUP){
+			if(new_view instanceof MergeView){
+			    System.out.println("** MergeView=" + new_view);
+			} else
+		        System.out.println("** View=" + new_view);
+		}
 		
 		if (new_view == null)
 			return;
