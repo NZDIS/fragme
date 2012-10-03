@@ -8,6 +8,7 @@ import java.util.Observer;
 import java.util.Vector;
 import org.nzdis.fragme.exceptions.StartUpException;
 import org.nzdis.fragme.factory.FragMeFactory;
+import org.nzdis.fragme.helpers.StartupWaitHelper;
 import org.nzdis.fragme.objects.Message;
 import org.nzdis.fragme.objects.ObjectManagerImpl;
 import org.nzdis.fragme.peers.PeerManagerImpl;
@@ -150,6 +151,22 @@ public abstract class ControlCenter {
 		return OM.getOwnObjects();
 	}
 
+	public static boolean setUpConnectionsWithHelper(String groupName, StartupWaitHelper helper) {
+		boolean startupResult = setUpConnections(groupName);
+		helper.waitForCondition();
+		return startupResult;
+	}
+	
+	public static boolean setUpConnectionsWithHelper(String groupName, String peerName, StartupWaitHelper helper) {
+		return setUpConnectionsWithHelper(groupName, peerName, null, helper);
+	}
+	
+	public static boolean setUpConnectionsWithHelper(String groupName, String peerName, String bindAddress, StartupWaitHelper helper) {
+		boolean startupResult = setUpConnections(groupName, peerName, bindAddress);
+		helper.waitForCondition();
+		return startupResult;
+	}
+	
 	/**
 	 * Sets up the peer connection and takes care of all the initialization
 	 * processes. This method takes a group name only, while the user will be
