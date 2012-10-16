@@ -15,14 +15,14 @@ public interface FactoryObject {
 	 * @param id
 	 *            Id of the FactoryObject
 	 */
-	public void setId(int id);
+	public void setId(String id);
 
 	/**
 	 * Returns the FactoryObject Id
 	 * 
 	 * @return the FactoryObject Id
 	 */
-	public int getId();
+	public String getId();
 
 	/**
 	 * Returns the address of the owner of the FactoryObject

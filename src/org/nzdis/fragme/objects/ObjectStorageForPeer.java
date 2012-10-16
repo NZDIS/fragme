@@ -72,14 +72,14 @@ public class ObjectStorageForPeer {
   	 * 
   	 * @param id id of object to be deleted
   	 */
-  	public void deleteObjectInDropOutCase(int id){
+  	public void deleteObjectInDropOutCase(String id){
   		Enumeration elements = table.elements();
   		while(elements.hasMoreElements()){
   			Vector aV = (Vector)elements.nextElement();
   			Iterator it = aV.iterator();
   			while(it.hasNext()){
   				FMeObject object = (FMeObject)it.next();
-  				if(object.getId() == id){
+  				if(object.getId().equals(id)){
   					it.remove();
   					object = null;
   					return;
@@ -93,14 +93,14 @@ public class ObjectStorageForPeer {
   	 * 
   	 * @param id id of object to delete
   	 */
-  	public void deleteObject(int id) {
+  	public void deleteObject(String id) {
   		Enumeration elements = table.elements();
   		while(elements.hasMoreElements()){
   			Vector aV = (Vector)elements.nextElement();
   			Iterator it = aV.iterator();
   			while(it.hasNext()){
   				FMeObject object = (FMeObject)it.next();
-  				if(object.getId() == id){
+  				if(object.getId().equals(id)){
   					object.deletedObject();
   					FragMeFactory.freeObject(object, object.getClass());
   					it.remove();

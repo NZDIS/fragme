@@ -34,7 +34,7 @@ public class FMeObjectReflection implements Serializable {
 	/**
 	 * Globally unique object id, denoting which object this field belongs to.
 	 */
-	private int objectId;
+	private String objectId;
 
 	/**
 	 * Constructs a new FMeObjectReflection object
@@ -47,7 +47,7 @@ public class FMeObjectReflection implements Serializable {
 	 *            id of object field belongs to
 	 */
 	public FMeObjectReflection(String fieldName, Object valueObject,
-			int objectId) {
+			String objectId) {
 		super();
 		this.fieldName = fieldName;
 		this.valueObject = valueObject;
@@ -57,14 +57,14 @@ public class FMeObjectReflection implements Serializable {
 	/**
 	 * @see org.globalse.fragme.objects.FMeObject#setId(int)
 	 */
-	public void setId(int id) {
+	public void setId(String id) {
 		this.objectId = id;
 	}
 
 	/**
 	 * @see org.globalse.fragme.objects.FMeObject#getId()
 	 */
-	public int getId() {
+	public String getId() {
 		return this.objectId;
 	}
 

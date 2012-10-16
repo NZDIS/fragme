@@ -139,7 +139,7 @@ public interface ObjectManager {
 	 *            the id to lookup
 	 * @return matching object
 	 */
-	public abstract FMeObject lookupById(int id);
+	public abstract FMeObject lookupById(String id);
 
 	/**
 	 * This method is used to communicate with PeerManager when a peer joins to
@@ -177,7 +177,7 @@ public interface ObjectManager {
 	 * @param id
 	 *            the id of the object to delete
 	 */
-	public abstract void deleteObject(Address ownerAddr, int id);
+	public abstract void deleteObject(Address ownerAddr, String id);
 
 	/**
 	 * This method sends a request to the owner of the object to request the
@@ -188,7 +188,7 @@ public interface ObjectManager {
 	 * @param id
 	 *            the id of the object to delete
 	 */
-	public abstract void requestDeleteObject(Address ownerAddr, int id);
+	public abstract void requestDeleteObject(Address ownerAddr, String id);
 
 	/**
 	 * This method is called when a peer that the current peer is fostering

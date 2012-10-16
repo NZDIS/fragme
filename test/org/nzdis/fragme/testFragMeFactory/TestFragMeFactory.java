@@ -53,7 +53,6 @@ public class TestFragMeFactory extends TestCase {
 		ObjectManager OM = ControlCenter.getObjectManager();
 		assertSame("Owner address should be the same as my address", o
 				.getOwnerAddr(), OM.getMyAddress());
-		assertTrue("id must be greater than 0", o.getId() > 0);
 	}
 
 	/**

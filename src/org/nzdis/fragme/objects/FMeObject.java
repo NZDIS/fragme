@@ -57,15 +57,12 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	/**
 	 * The unique id of this FMeObject
 	 */
-	private int id;
+	private String id;
 
 	/**
 	 * The address of the owner peer of this FMeObject
 	 */
 	private Address ownerAddr;
-
-	
-//	protected int m_position[] = new int[3];
 
 	/** 
 	 * If the reflection framework is changing an object 
@@ -162,7 +159,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * 
 	 * @return int the ID of the object.
 	 */
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
@@ -194,7 +191,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * Sets the object's id.
 	 * @param id id to set
 	 */
-	public void setId(int id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
@@ -234,7 +231,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	public final boolean equals(Object obj) {
 		try {
 			FMeObject fmeObj = (FMeObject) obj;
-			if (fmeObj.getId() == this.id && fmeObj.getOwnerAddr().equals(this.ownerAddr)) return true;
+			if (fmeObj.getId().equals(this.id)) return true;
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.out

@@ -1,6 +1,7 @@
 package org.nzdis.fragme.factory;
 
 import java.util.Hashtable;
+import java.util.UUID;
 import java.util.Vector;
 import org.nzdis.fragme.ObjectManager;
 import org.nzdis.fragme.objects.FMeObject;
@@ -25,8 +26,6 @@ public abstract class FragMeFactory {
 	 */
 	private static Hashtable freeObjects = new Hashtable();
 
-	public static int objectIdCounter = 0;
-
 	private static Hashtable factories4Objects = new Hashtable();
 
 	/**
@@ -34,13 +33,6 @@ public abstract class FragMeFactory {
 	 * BEFORE freeing the objects
 	 */
 	private static final int maxNumOfFreeObjects = 5;
-
-	// /**
-	// * a increasing number used as a unique identifier for each generated
-	// object
-	// * in this FactoryClass
-	// */
-	// private static int id = -1;
 
 	/**
 	 * create of a FMeObjectFactory Class returns a FMeObject, a
@@ -162,9 +154,8 @@ public abstract class FragMeFactory {
 	 * 
 	 * @return int the next factory id
 	 */
-	public static final int generateObjectId() {
-		objectIdCounter++;
-		return objectIdCounter;
+	public static final String generateObjectId() {
+		return UUID.randomUUID().toString();
 	}
 
 	/**

@@ -545,9 +545,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		String performative = afragMsg.getPerformative();
 		Object content = afragMsg.getContent();
 
-		if (performative.equals(ControlCenter.SYNCHRONIZE)) {
-			receiveSynchronise(content);
-		} else if (performative.equals(ControlCenter.MODIFY)) {
+		if (performative.equals(ControlCenter.MODIFY)) {
 			receiveModify(content, senderAddr);
 		} else if (performative.equals(ControlCenter.DELETE)) {
 			receiveDelete(content, senderAddr);
@@ -561,16 +559,6 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		afragMsg = null;
 		performative = null;
 		content = null;
-	}
-
-	/**
-	 * 
-	 * @param content
-	 *            an object synchronised
-	 */
-	private void receiveSynchronise(Object content) {
-		Integer factoryStartingSeq = (Integer) content;
-		FragMeFactory.objectIdCounter = factoryStartingSeq.intValue();
 	}
 
 	/**
@@ -632,8 +620,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 *            the address of the sender
 	 */
 	private void receiveDelete(Object content, Address senderAddr) {
-		ControlCenter.getObjectManager().deleteObject(senderAddr,
-				((Integer) content).intValue());
+		ControlCenter.getObjectManager().deleteObject(senderAddr, (String)content);
 	}
 
 	/**
@@ -643,8 +630,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * 
 	 */
 	private void receiveRequestDelete(Object content) {
-		ControlCenter.getObjectManager().deleteObject(myAddr,
-				((Integer) content).intValue());
+		ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
 	}
 
 	/**

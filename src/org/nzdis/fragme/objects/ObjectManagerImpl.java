@@ -394,14 +394,14 @@ public class ObjectManagerImpl implements ObjectManager {
 		return null;
 	}
 
-	public FMeObject lookupById(int id) {
+	public FMeObject lookupById(String id) {
 		Vector v = getAllObjects();
 
 		synchronized (storageForOtherPeers) {
 			synchronized (ownObjects) {
 				for (int i = 0; i < v.size(); i++) {
 					FMeObject obj = (FMeObject) v.get(i);
-					if (obj.getId() == id) {
+					if (obj.getId().equals(id)) {
 						return obj;
 					}
 				}
@@ -446,19 +446,13 @@ public class ObjectManagerImpl implements ObjectManager {
 			ObjectStorageForPeer peerStorage = (ObjectStorageForPeer) storageForDropOutPeers
 					.get(peerName);
 			objects = peerStorage.getObjects();
-			int i = 0;
-			for (; i < objects.size(); i++) {
-				FMeObject object = (FMeObject) objects.get(i);
-				object.setOwnerAddr(addr);
-				object.setId(i);
-				pm.send(ControlCenter.MODIFY, objects.get(i), addr);
+			for(Object object : objects) {
+				FMeObject fmeObject = (FMeObject)object;
+				pm.send(ControlCenter.MODIFY, fmeObject, addr);
 			}
-			int factoryStartingSeq = i;
 			peerStorage.clear();
 			storageForDropOutPeers.remove(peerName);
 			peerStorage = null;
-			pm.send(ControlCenter.SYNCHRONIZE, new Integer(factoryStartingSeq),
-					addr);
 		}
 	}
 
@@ -470,13 +464,12 @@ public class ObjectManagerImpl implements ObjectManager {
 		peerStorage = null;
 	}
 
-	public void deleteObject(Address addr, int id) {
+	public void deleteObject(Address addr, String id) {
 		if (addr.equals(myAddr)) {
 			synchronized (ownObjects) {
 				ownObjects.deleteObject(id);
 			}
-			ControlCenter.getPeerManager().send(ControlCenter.DELETE,
-					new Integer(id), null);
+			ControlCenter.getPeerManager().send(ControlCenter.DELETE, id, null);
 		} else {
 			synchronized (storageForOtherPeers) {
 				ObjectStorageForPeer peerStorage = (ObjectStorageForPeer) storageForOtherPeers
@@ -486,9 +479,8 @@ public class ObjectManagerImpl implements ObjectManager {
 		}
 	}
 
-	public void requestDeleteObject(Address addr, int id) {
-		ControlCenter.getPeerManager().send(ControlCenter.REQUEST_DELETE,
-				new Integer(id), addr);
+	public void requestDeleteObject(Address addr, String id) {
+		ControlCenter.getPeerManager().send(ControlCenter.REQUEST_DELETE, id, addr);
 	}
 
 	public void delegatePeerObjects(Address addr) {
@@ -502,7 +494,6 @@ public class ObjectManagerImpl implements ObjectManager {
 					FMeObject object = (FMeObject) objects.get(i);
 					if (object instanceof Transferable) {
 						peerStorage.deleteObjectInDropOutCase(object.getId());
-						object.setId(FragMeFactory.generateObjectId());
 						object.setOwnerAddr(myAddr);
 						addOwnObject(object);
 						pushChange(object);
