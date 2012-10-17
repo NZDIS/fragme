@@ -550,9 +550,13 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		} else if (performative.equals(ControlCenter.DELETE)) {
 			receiveDelete(content, senderAddr);
 		} else if (performative.equals(ControlCenter.REQUEST_DELETE)) {
-			receiveRequestDelete(content);
+			receiveRequestDelete(content, senderAddr);
 		} else if (performative.equals(ControlCenter.NOTIFY)) {
 			receiveNotify(content, senderAddr);
+		} else if (performative.equals(ControlCenter.REQUEST_OWNERSHIP)) {
+			receiveRequestOwnership(content, senderAddr);
+		} else if (performative.equals(ControlCenter.DELEGATED_OWNERSHIP)) {
+			receiveDelegatedOwnership(content, senderAddr);
 		}
 
 		senderAddr = null;
@@ -615,6 +619,36 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/**
 	 * 
 	 * @param content
+	 *            the object to change ownership
+	 * @param senderAddr
+	 *            the address of the sender
+	 */
+	private void receiveRequestOwnership(Object content, Address senderAddr) {
+		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
+		if ((obj.getOwnerAddr().equals(ControlCenter.getMyAddress())) && 
+			(obj.allowDelegationOfOwnership(senderAddr))) {
+			obj.delegateOwnership(senderAddr);
+		}
+	}
+
+	/**
+	 * 
+	 * @param content
+	 *            the object to change ownership
+	 * @param senderAddr
+	 *            the address of the sender
+	 */
+	private void receiveDelegatedOwnership(Object content, Address senderAddr) {
+		FMeObjectReflection objRef = (FMeObjectReflection)content;
+		FMeObject obj = ControlCenter.getObjectManager().lookupById(objRef.getId());
+		if (obj.getOwnerAddr().equals(senderAddr)) {
+			ControlCenter.getObjectManager().delegatedOwnership((Address)objRef.getValueObject(), obj);
+		}
+	}
+
+	/**
+	 * 
+	 * @param content
 	 *            the object deleted
 	 * @param senderAddr
 	 *            the address of the sender
@@ -629,8 +663,12 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 *            the object that requests delete
 	 * 
 	 */
-	private void receiveRequestDelete(Object content) {
-		ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
+	private void receiveRequestDelete(Object content, Address senderAddr) {
+		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
+		if ((obj.getOwnerAddr() == ControlCenter.getMyAddress()) && 
+			(obj.allowRequestedDeletion(senderAddr))) {
+			ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
+		}
 	}
 
 	/**

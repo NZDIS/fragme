@@ -3,6 +3,7 @@ package org.nzdis.fragme;
 import java.io.IOException;
 import java.util.Vector;
 import org.nzdis.fragme.objects.FMeObject;
+import org.nzdis.fragme.objects.FMeObjectReflection;
 import org.jgroups.Address;
 
 /**
@@ -109,6 +110,8 @@ public interface ObjectManager {
 	 * 
 	 * @param object
 	 *            the received changed object
+	 * @param fromAddress
+	 *            the ...
 	 */
 	public abstract void receiveChange(FMeObject object, Address fromAddress);
 
@@ -172,7 +175,7 @@ public interface ObjectManager {
 	 * This method deletes an object from object storage, and broadcasts the
 	 * deletion
 	 * 
-	 * @param addr
+	 * @param ownerAddr
 	 *            Address of object owner
 	 * @param id
 	 *            the id of the object to delete
@@ -183,12 +186,45 @@ public interface ObjectManager {
 	 * This method sends a request to the owner of the object to request the
 	 * owner to delete it
 	 * 
-	 * @param addr
+	 * @param ownerAddr
 	 *            Address of object owner
 	 * @param id
 	 *            the id of the object to delete
 	 */
 	public abstract void requestDeleteObject(Address ownerAddr, String id);
+
+	/**
+	 * This method sends a request to the owner of the object to request they
+	 * delegate ownership to this peer
+	 * 
+	 * @param ownerAddr
+	 *            Address of object owner
+	 * @param id
+	 *            the id of the object to delegate ownership
+	 */
+	public abstract void requestOwnership(Address ownerAddr, String id);
+
+	/**
+	 * This method sends a message to all peer, informing them that the owner
+	 * of the object has changed
+	 * 
+	 * @param origOwnerAddr
+	 *            Address of the object's original owner
+	 * @param newOwner
+	 *            a FMeObjectReflection containing the object's new owner address
+	 */
+	public abstract void sendDelegatedOwnership(Address ownerAddr, FMeObjectReflection newOwner);
+
+	/**
+	 * This method sends an object to all peer, informing them that the owner
+	 * has changed
+	 * 
+	 * @param newAddr
+	 *            Address of the object's new owner
+	 * @param obj
+	 *            the object
+	 */
+	public abstract void delegatedOwnership(Address newAddr, FMeObject obj);
 
 	/**
 	 * This method is called when a peer that the current peer is fostering

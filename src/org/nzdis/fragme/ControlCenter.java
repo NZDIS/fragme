@@ -86,7 +86,7 @@ public abstract class ControlCenter {
 	public static final String DELETE = "DELETE";
 	public static final String REQUEST_DELETE = "REQUEST_DELETE";
 	public static final String REQUEST_OWNERSHIP = "REQUEST_OWNERSHIP";
-	public static final String DELEGATE_OWNERSHIP = "DELEGATE_OWNERSHIP";
+	public static final String DELEGATED_OWNERSHIP = "DELEGATED_OWNERSHIP";
 
 	/**
 	 * Static flag used for synchronization with the PeerManager at startup time

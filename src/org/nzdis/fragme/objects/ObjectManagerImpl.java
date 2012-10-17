@@ -483,6 +483,37 @@ public class ObjectManagerImpl implements ObjectManager {
 		ControlCenter.getPeerManager().send(ControlCenter.REQUEST_DELETE, id, addr);
 	}
 
+	public void requestOwnership(Address addr, String id) {
+		ControlCenter.getPeerManager().send(ControlCenter.REQUEST_OWNERSHIP, id, addr);
+	}
+
+	public void sendDelegatedOwnership(Address addr, FMeObjectReflection newOwner) {
+		ControlCenter.getPeerManager().send(ControlCenter.DELEGATED_OWNERSHIP, newOwner, null);
+	}
+
+	public void delegatedOwnership(Address newOwnerAddr, FMeObject obj) {
+		// TODO do the actual switch
+		Address myAddr = ControlCenter.getMyAddress();
+		synchronized (storageForOtherPeers) {
+			synchronized (ownObjects) {
+				if (obj.getOwnerAddr().equals(myAddr)) {
+					ownObjects.deleteObjectInDropOutCase(obj.getId());
+				} else {
+					ObjectStorageForPeer peerStorage = (ObjectStorageForPeer)storageForOtherPeers.get(obj.getOwnerAddr());
+					peerStorage.deleteObjectInDropOutCase(obj.getId());
+				}
+				obj.setOwnerAddr(newOwnerAddr);
+				if (newOwnerAddr.equals(myAddr)) {
+					ownObjects.deleteObjectInDropOutCase(obj.getId());
+					ownObjects.addObject(obj);
+				} else {
+					ObjectStorageForPeer peerStorage = (ObjectStorageForPeer)storageForOtherPeers.get(newOwnerAddr);
+					peerStorage.addObject(obj);
+				}
+			}
+		}
+	}
+	
 	public void delegatePeerObjects(Address addr) {
 		String peerName = ControlCenter.getPeerManager().getPeerName(addr);
 		synchronized (storageForOtherPeers) {

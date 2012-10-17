@@ -62,7 +62,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	/**
 	 * The address of the owner peer of this FMeObject
 	 */
-	private Address ownerAddr;
+	private Address ownerAddr = null;
 
 	/** 
 	 * If the reflection framework is changing an object 
@@ -163,30 +163,6 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 		return id;
 	}
 
-//	/**
-//	 * get the x axis coordinate of this object in a game
-//	 * @return int the x axis coordinate
-//	 */
-//	public int getPositionX() {
-//		return m_position[0];
-//	}
-//
-//	/**
-//	 * get the y axis coordinate of this object in a game
-//	 * @return int the y axis coordinate
-//	 */
-//	public int getPositionY() {
-//		return m_position[1];
-//	}
-//
-//	/**
-//	 * get the z axis coordinate of this object in a game
-//	 * @return int the z axis coordinate
-//	 */
-//	public int getPositionZ() {
-//		return m_position[2];
-//	}
-
 	/**
 	 * Sets the object's id.
 	 * @param id id to set
@@ -197,11 +173,74 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 
 	/**
 	 * Sets the owner's address
+	 * Don't call this from your application - it is called from within FragMe's systems
+	 * (Calling this would give you an inconsistent world view, but would not affect other peers)
 	 * @param ownerAddr the owner address to set
 	 */
-
-	public void setOwnerAddr(Address ownerAddr) {
+	public final void setOwnerAddr(Address ownerAddr) {
 		this.ownerAddr = ownerAddr;
+	}
+
+	/**
+	 * Check if deserialization should be performed
+	 * This method is called when an update to an owned object is received
+	 * Is only called if this peer owns this object (you don't need to check this yourself)
+	 * The default method always returns true - any update is accepted
+	 * Override this method to implement different behavior
+	 */
+	public boolean allowDeserialize(Address newOwnerAddr) {
+		return true;
+	}
+
+	/**
+	 * Send a request to the owner, asking them to delegate ownership to this peer
+	 */
+	public final void requestOwnership() {
+		if (!this.ownerAddr.equals(ControlCenter.getMyAddress())) {
+			ControlCenter.getObjectManager().requestOwnership(this.ownerAddr, this.id);
+		}
+	}
+
+	/**
+	 * Check if delegation of this object to another peer is allowed
+	 * This method is called when a valid request for ownership is received
+	 * Is only called if this peer owns this object (you don't need to check this yourself)
+	 * The default method always returns true - any valid request for ownership is granted
+	 * Override this method to implement different behavior
+	 */
+	public boolean allowDelegationOfOwnership(Address newOwnerAddr) {
+		return true;
+	}
+
+	/**
+	 * Delegate ownership of this object to another peer
+	 * This is automatically called when a request for ownership is received 
+	 * and a call to allowDelegationOfOwnership has returned true, but can
+	 * also be called by the object's owner 
+	 */
+	public final void delegateOwnership(Address newOwnerAddr) {
+		Address myAddr = ControlCenter.getMyAddress();
+		if (this.ownerAddr.equals(myAddr)) {
+			if (newOwnerAddr.equals(myAddr)) {
+				return;
+			}
+			this.setOwnerAddr(newOwnerAddr);
+			ControlCenter.getObjectManager().sendDelegatedOwnership(myAddr, new FMeObjectReflection("ownerAddr", newOwnerAddr, id));
+			// This will also send to self, which will in turn call delegateOwnership()
+		} else {
+			throw new RuntimeException("Error: Transfer of object ownership only allowed for owned objects");
+		}
+	}
+
+	/**
+	 * Check if deletion of this (owned) object, requested by another peer, is allowed
+	 * This method is called when a valid request for deletion is received
+	 * Is only called if this peer owns this object (you don't need to check this yourself)
+	 * The default method always returns true - any request for deletion is granted
+	 * Override this method to implement different behavior
+	 */
+	public boolean allowRequestedDeletion(Address requesterAddr) {
+		return true;
 	}
 
 	/**
