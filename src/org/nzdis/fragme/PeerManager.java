@@ -24,6 +24,13 @@ public interface PeerManager {
 	public abstract void receive(FMeObject object, Address fromAddress);
 
 	/**
+	 * Gets the peer's address
+	 * 
+	 * @return the peer's address
+	 */
+	public abstract Address getPeerAddress(String name);
+
+	/**
 	 * maps a peer address to a peer name
 	 */
 	public abstract String getPeerName(Address addr);

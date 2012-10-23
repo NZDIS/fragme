@@ -63,6 +63,10 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The address of the owner peer of this FMeObject
 	 */
 	private Address ownerAddr = null;
+	// TODO 
+	// At minimum, replace ownerAddr with ownerName
+	// Better yet, remove owner from FMeObject - it can be found in OM object containers 
+	
 
 	/** 
 	 * If the reflection framework is changing an object 
@@ -178,6 +182,8 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * @param ownerAddr the owner address to set
 	 */
 	public final void setOwnerAddr(Address ownerAddr) {
+		// TODO verify with OM containers before changing this value
+		// Or even better, don't have an owner in FMeObject - instead do a lookup from OM containers
 		this.ownerAddr = ownerAddr;
 	}
 
@@ -188,7 +194,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The default method always returns true - any update is accepted
 	 * Override this method to implement different behavior
 	 */
-	public boolean allowDeserialize(Address newOwnerAddr) {
+	public boolean allowDeserialize(String requesterName) {
 		return true;
 	}
 
@@ -208,7 +214,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The default method always returns true - any valid request for ownership is granted
 	 * Override this method to implement different behavior
 	 */
-	public boolean allowDelegationOfOwnership(Address newOwnerAddr) {
+	public boolean allowDelegationOfOwnership(String requesterName) {
 		return true;
 	}
 
@@ -218,15 +224,15 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * and a call to allowDelegationOfOwnership has returned true, but can
 	 * also be called by the object's owner 
 	 */
-	public final void delegateOwnership(Address newOwnerAddr) {
+	public final void delegateOwnership(String newOwnerName) {
 		Address myAddr = ControlCenter.getMyAddress();
 		if (this.ownerAddr.equals(myAddr)) {
-			if (newOwnerAddr.equals(myAddr)) {
+			if (newOwnerName.equals(ControlCenter.getMyName())) {
 				return;
 			}
-			this.setOwnerAddr(newOwnerAddr);
+			Address newOwnerAddr = ControlCenter.getPeerAddress(newOwnerName);
+			ControlCenter.getObjectManager().delegatedOwnership(newOwnerAddr, this);
 			ControlCenter.getObjectManager().sendDelegatedOwnership(myAddr, new FMeObjectReflection("ownerAddr", newOwnerAddr, id));
-			// This will also send to self, which will in turn call delegateOwnership()
 		} else {
 			throw new RuntimeException("Error: Transfer of object ownership only allowed for owned objects");
 		}
@@ -239,7 +245,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The default method always returns true - any request for deletion is granted
 	 * Override this method to implement different behavior
 	 */
-	public boolean allowRequestedDeletion(Address requesterAddr) {
+	public boolean allowDelete(String requesterName) {
 		return true;
 	}
 
@@ -249,6 +255,14 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 */
 	public Address getOwnerAddr() {
 		return ownerAddr;
+	}
+
+	/**
+	 * Returns the owner's name
+	 * @return the owner's name
+	 */
+	public String getOwnerName() {
+		return ControlCenter.getPeerName(ownerAddr);
 	}
 
 	/**

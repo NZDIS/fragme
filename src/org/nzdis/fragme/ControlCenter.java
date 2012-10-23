@@ -265,6 +265,26 @@ public abstract class ControlCenter {
 	}
 
 	/**
+	 * Returns the name of this peer
+	 * 
+	 * @return the peer's own name
+	 */
+	public static String getMyName() {
+		return PM.getMyPeerName();
+	}
+
+	/**
+	 * Returns the peer address for a given name
+	 * 
+	 * @param name
+	 *            the name we want to know address of
+	 * @return the peer address for the given name
+	 */
+	public static Address getPeerAddress(String name) {
+		return PM.getPeerAddress(name);
+	}
+
+	/**
 	 * Returns the peer name for a given address
 	 * 
 	 * @param addr

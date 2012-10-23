@@ -186,25 +186,25 @@ public abstract class FragMeFactory {
 	 */
 	public synchronized static final FMeObject deserialize(FMeObject serObject) {
 		try {
-			// create FMeObject
+			// create a new skeleton object for the serialized object
 			FMeObject object = (FMeObject) getObject(serObject.getClass());
-
 			object.setId(serObject.getId());
 			object.setOwnerAddr(serObject.getOwnerAddr());
-			ObjectManager OM = ControlCenter.getObjectManager();
-
-			// look up to see if this object already exists in the game
-			FMeObject existObject = OM.lookup(object);
+			
+			// look up to see if this object already exists
+			FMeObject existObject = ControlCenter.getObjectManager().lookup(object);
 
 			if (existObject == null) {
+				// the object doesn't already exist, so deserialize into the skeleton object
 				if(DEBUG_OBJECT_MANAGEMENT){
 					System.out.println("Creating a new object!");
 				}
 				object.deserialize(serObject);
 				serObject = null;
-				OM.addObject(object);
+				ControlCenter.getObjectManager().addObject(object);
 				return object;
 			} else {
+				// the object already exists, so deserialize into existing object and discard skeleton
 				if(DEBUG_OBJECT_MANAGEMENT){
 					System.out.println("Reusing an existing object!");
 				}

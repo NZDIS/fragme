@@ -26,7 +26,7 @@ public class TestMessageSending extends TestCase {
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
 		 */
-		String subPath = TestMessageSending.class.getResource("Client2.jar").getPath();
+		String subPath = TestMessageSending.class.getResource("TestClientMessageSender.jar").getPath();
 		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
 			subPath = subPath.substring(1);
 			path = "cmd /C start " + path;
@@ -67,8 +67,8 @@ public class TestMessageSending extends TestCase {
 	 * @throws IOException
 	 */
 	public void testSendMessage() throws InterruptedException, IOException {
-		Client1 c1 = new Client1();
-		c1.start();
+		TestClientMessageReceiver clientReceiver = new TestClientMessageReceiver();
+		clientReceiver.start();
 		System.out.println("waiting for startup " + startupDelay + "ms");
 		Thread.sleep(startupDelay);
 		System.out.println("wait for startup finished");
@@ -78,7 +78,7 @@ public class TestMessageSending extends TestCase {
 		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
-		assertEquals("The sender of the message received is incorrect", "c2",
+		assertEquals("The sender of the message received is incorrect", "clientSender",
 				msg.getSender());
 		assertEquals("The type of the message received is incorrect", null, msg
 				.getType());
@@ -94,8 +94,8 @@ public class TestMessageSending extends TestCase {
 	 */
 	public void testSendMessageWithRecipient() throws InterruptedException,
 			IOException {
-		Client1 c1 = new Client1();
-		c1.start();
+		TestClientMessageReceiver clientReceiver = new TestClientMessageReceiver();
+		clientReceiver.start();
 		System.out.println("waiting for startup " + startupDelay + "ms");
 		Thread.sleep(startupDelay);
 		System.out.println("wait for startup finished");
@@ -105,12 +105,12 @@ public class TestMessageSending extends TestCase {
 		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
-		assertEquals("The sender of the message received is incorrect", "c2",
+		assertEquals("The sender of the message received is incorrect", "clientSender",
 				msg.getSender());
 		assertEquals("The type of the message received is incorrect", null, msg
 				.getType());
 		assertEquals("The recipients of the message received is incorrect",
-				"c1", msg.getRecipients().get(0));
+				"clientReceiver", msg.getRecipients().get(0));
 	}
 
 	/**
@@ -121,8 +121,8 @@ public class TestMessageSending extends TestCase {
 	 */
 	public void testSendMessageWithType() throws InterruptedException,
 			IOException {
-		Client1 c1 = new Client1();
-		c1.start();
+		TestClientMessageReceiver clientReceiver = new TestClientMessageReceiver();
+		clientReceiver.start();
 		System.out.println("waiting for startup " + startupDelay + "ms");
 		Thread.sleep(startupDelay);
 		System.out.println("wait for startup finished");
@@ -132,7 +132,7 @@ public class TestMessageSending extends TestCase {
 		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
-		assertEquals("The sender of the message received is incorrect", "c2",
+		assertEquals("The sender of the message received is incorrect", "clientSender",
 				msg.getSender());
 		assertEquals("The type of the message received is incorrect", "type1",
 				msg.getType());
@@ -148,8 +148,8 @@ public class TestMessageSending extends TestCase {
 	 */
 	public void testSendMessageWithRecipientAndType()
 			throws InterruptedException, IOException {
-		Client1 c1 = new Client1();
-		c1.start();
+		TestClientMessageReceiver clientReceiver = new TestClientMessageReceiver();
+		clientReceiver.start();
 		System.out.println("waiting for startup " + startupDelay + "ms");
 		Thread.sleep(startupDelay);
 		System.out.println("wait for startup finished");
@@ -159,11 +159,11 @@ public class TestMessageSending extends TestCase {
 		System.out.println("wait for message finished");
 		assertEquals("The content of the message received is incorrect",
 				"hello", msg.getContent());
-		assertEquals("The sender of the message received is incorrect", "c2",
+		assertEquals("The sender of the message received is incorrect", "clientSender",
 				msg.getSender());
 		assertEquals("The type of the message received is incorrect", "type1",
 				msg.getType());
 		assertEquals("The recipients of the message received is incorrect",
-				"c1", msg.getRecipients().get(0));
+				"clientReceiver", msg.getRecipients().get(0));
 	}
 }

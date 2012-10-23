@@ -75,6 +75,8 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/** The address of the current peer */
 	private Address myAddr;
 	private Hashtable<Address, String> peerAddressToNameTable = new Hashtable<Address, String>();
+	private Hashtable<String, Address> peerNameToAddressTable = new Hashtable<String, Address>();
+	// TODO make sure that these are cleaned out when a peer leaves
 	private Hashtable<Address, FlagBool> spaceForMeHasBeenAllocated = new Hashtable<Address, FlagBool>();
 	private Hashtable<Address, FlagBool> peersWhichHaveSentObjects = new Hashtable<Address, FlagBool>();
 	private Hashtable<Address, JoinThread> joinThreads = new Hashtable<Address, JoinThread>(); 
@@ -183,6 +185,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 						e.printStackTrace();
 					}
 				}
+				spaceForMeHasBeenAllocated.remove(addr);
 			} // end of synchronized block
 			
 			// make sure we get the peer's name before we send objects to him
@@ -321,6 +324,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 			myAddr = channel.getLocalAddress();
 			ControlCenter.getObjectManager().setMyAddress(myAddr);
 			instance.peerAddressToNameTable.put(myAddr, instance.getMyPeerName());
+			instance.peerNameToAddressTable.put(instance.getMyPeerName(), myAddr);
 
 			// wait until viewAccepted has been called at least once.
 			// this gives us our initial list of peers
@@ -406,6 +410,23 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	/*
 	 * -------------- Interface PeerManager --------------
 	 */
+
+	/**
+	 * Maps a peer name to a peer address.
+	 * 
+	 * @param name
+	 *            name of the peer
+	 */
+	public Address getPeerAddress(String name) {
+		Address addr = (Address)peerNameToAddressTable.get(name);
+		// peerNameToAddress can be indirectly accessed from outside FragMe using this method.
+		// It is possible for an application to access peers through the ObjectManager before their
+		// name-to-address mapping has been initialized. This cannot happen at startup - only when
+		// a peer joins and is then referenced before it has transmitted it's name.
+		if (addr == null)
+			throw new RuntimeException("A peer name-to-addr mapping doesn't exist - probably not fully registered yet.");
+		return addr;
+	}
 
 	/**
 	 * Maps a peer address to a peer name.
@@ -624,10 +645,11 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 *            the address of the sender
 	 */
 	private void receiveRequestOwnership(Object content, Address senderAddr) {
+		String senderName = ControlCenter.getPeerName(senderAddr);
 		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
 		if ((obj.getOwnerAddr().equals(ControlCenter.getMyAddress())) && 
-			(obj.allowDelegationOfOwnership(senderAddr))) {
-			obj.delegateOwnership(senderAddr);
+			(obj.allowDelegationOfOwnership(senderName))) {
+			obj.delegateOwnership(senderName);
 		}
 	}
 
@@ -664,9 +686,10 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	 * 
 	 */
 	private void receiveRequestDelete(Object content, Address senderAddr) {
+		String senderName = ControlCenter.getPeerName(senderAddr);
 		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
 		if ((obj.getOwnerAddr() == ControlCenter.getMyAddress()) && 
-			(obj.allowRequestedDeletion(senderAddr))) {
+			(obj.allowDelete(senderName))) {
 			ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
 		}
 	}
@@ -692,6 +715,7 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 					// add the peer name to the table
 					if (peerAddressToNameTable.get(senderAddr) == null) {
 						peerAddressToNameTable.put(senderAddr, (String)msgContent);
+						peerNameToAddressTable.put((String)msgContent, senderAddr);
 					} else {
 						System.err.println("Warning: received PEER_NAME duplicate (perhaps a new peer is using the address of an old peer)");
 					}
