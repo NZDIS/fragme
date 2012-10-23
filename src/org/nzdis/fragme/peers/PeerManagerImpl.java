@@ -597,18 +597,23 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 				System.out.println("Receive: FMeObject");
 			}
 			FMeObject serialised = (FMeObject) content;
-			FMeObject receivedObject = FragMeFactory.deserialize(serialised);
+			FMeObject existingObject = ControlCenter.getObjectManager().lookup(serialised);
+			// TODO make sure this is correct
+			if ((existingObject != null) && existingObject.allowDeserialize(ControlCenter.getPeerName(fromAddress))) {
+				FMeObject receivedObject = FragMeFactory.deserialize(serialised);
+				receive(receivedObject, fromAddress);
+				receivedObject.changedObject();
+				this.setChanged();
+				this.notifyObservers(receivedObject);
+				receivedObject = null;
+			}
 			serialised = null;
-			receive(receivedObject, fromAddress);
-			receivedObject.changedObject();
-			this.setChanged();
-			this.notifyObservers(receivedObject);
-			receivedObject = null;
 		} else if (content instanceof FMeObjectReflection) {
 			if(DEBUG_SENDING){
 				System.out.println("Receive: FMeObjectReflection");
 			}
 			FMeObjectReflection refObject = (FMeObjectReflection) content;
+			// TODO test allowDeserialize
 
 			ObjectManager OM = ControlCenter.getObjectManager();
 
