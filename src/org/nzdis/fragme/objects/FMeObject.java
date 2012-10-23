@@ -63,6 +63,9 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The address of the owner peer of this FMeObject
 	 */
 	private Address ownerAddr = null;
+	
+	/** constant for owner address field to enforce consistent use for delegation -- NEEDS to match name of field*/
+	transient private static final String OWNER_ADDRESS_FIELD = "ownerAddr";
 	// TODO 
 	// At minimum, replace ownerAddr with ownerName
 	// Better yet, remove owner from FMeObject - it can be found in OM object containers 
@@ -232,7 +235,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 			}
 			Address newOwnerAddr = ControlCenter.getPeerAddress(newOwnerName);
 			ControlCenter.getObjectManager().delegatedOwnership(newOwnerAddr, this);
-			ControlCenter.getObjectManager().sendDelegatedOwnership(myAddr, new FMeObjectReflection("ownerAddr", newOwnerAddr, id));
+			ControlCenter.getObjectManager().sendDelegatedOwnership(myAddr, new FMeObjectReflection(OWNER_ADDRESS_FIELD, newOwnerAddr, id));
 		} else {
 			throw new RuntimeException("Error: Transfer of object ownership only allowed for owned objects");
 		}
@@ -272,8 +275,8 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * @return a string consisting of class name, owner adress and object id
 	 */
 	public String toString() {
-		return this.getClass().getName() + " Owner Address:" + this.ownerAddr
-				+ " ID:" + this.id;
+		return this.getClass().getName() + " Owner Address: " + this.ownerAddr
+				+ " ID: " + this.id;
 	}
 
 	/**
@@ -287,8 +290,7 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 			if (fmeObj.getId().equals(this.id)) return true;
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.out
-					.println("(FMeSerialized::equals()): Two objects of different type have been compared!");
+			System.out.println("(FMeSerialized::equals()): Two objects of different type have been compared!");
 		}
 		return false;
 	}

@@ -32,7 +32,7 @@ public class TestGetObjects extends TestCase {
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestGetObjectPeer.java as main class
 		 */
-		String subPath = TestGetObjects.class.getResource("TestGetObjectsPeer.jar").getPath();
+		String subPath = TestGetObjects.class.getResource(TestGetObjectsPeer.class.getSimpleName() + ".jar").getPath();
 		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
 			subPath = subPath.substring(1);
 			path = "cmd /C start " + path;

@@ -190,7 +190,7 @@ public class Message extends FMeObject implements Serializable {
 	 * @return a String with sender, recipients, type and content
 	 */
 	public String toString() {
-		return "Sender:" + this.sender + " Recipients:" + this.recipients
-				+ " Type:" + this.type + " Content:" + this.content;
+		return "Sender: " + this.sender + " Recipients: " + this.recipients
+				+ " Type: " + this.type + " Content: " + this.content;
 	}
 }

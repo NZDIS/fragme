@@ -26,7 +26,7 @@ public class TestMessageSending extends TestCase {
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
 		 */
-		String subPath = TestMessageSending.class.getResource("TestClientMessageSender.jar").getPath();
+		String subPath = TestMessageSending.class.getResource(TestClientMessageSender.class.getSimpleName() + ".jar").getPath();
 		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
 			subPath = subPath.substring(1);
 			path = "cmd /C start " + path;

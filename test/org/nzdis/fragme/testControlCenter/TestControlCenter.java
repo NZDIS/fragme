@@ -23,7 +23,7 @@ public class TestControlCenter extends TestCase {
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
 		 */
-		String subPath = TestControlCenter.class.getResource("TestClass.jar").getPath();
+		String subPath = TestControlCenter.class.getResource(TestClass.class.getSimpleName() + ".jar").getPath();
 		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)){
 			subPath = subPath.substring(1);
 			path = "cmd /C start " + path;
@@ -120,6 +120,8 @@ public class TestControlCenter extends TestCase {
 		/** set up again so tearDown doesn't fail */
 		ControlCenter.setUpConnections("testGroup1", "testPeer");
 	}
+	
+	public final String DEFAULT_OBJECT_STORAGE_FILENAME = "objectsOnDisk.txt";
 
 	/**
 	 * Tests serialize to file by saving a String
@@ -142,7 +144,7 @@ public class TestControlCenter extends TestCase {
 		String loaded2 = "";
 
 		try {
-			FileInputStream f = new FileInputStream("objectsOnDisk.txt");
+			FileInputStream f = new FileInputStream(DEFAULT_OBJECT_STORAGE_FILENAME);
 			Vector v1 = ControlCenter.serializedFromFile(String.class);
 			loaded = (String) v1.get(0);
 			loaded2 = (String) v1.get(1);
@@ -176,7 +178,7 @@ public class TestControlCenter extends TestCase {
 		}
 
 		try {
-			FileInputStream f = new FileInputStream("objectsOnDisk.txt");
+			FileInputStream f = new FileInputStream(DEFAULT_OBJECT_STORAGE_FILENAME);
 			Vector v1 = ControlCenter.serializedFromFile(TestClass.class);
 			loaded = (TestClass) v1.get(0);
 			f.close();
