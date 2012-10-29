@@ -82,11 +82,14 @@ public abstract class ControlCenter {
 	 */
 	//public static final String SYNCHRONIZE = "SYNCHRONIZE";
 	public static final String MODIFY = "MODIFY";
-	public static final String NOTIFY = "NOTIFY";
-	public static final String DELETE = "DELETE";
+	public static final String MODIFY_FAILED = "MODIFY_FAILED";
 	public static final String REQUEST_DELETE = "REQUEST_DELETE";
-	public static final String REQUEST_OWNERSHIP = "REQUEST_OWNERSHIP";
+	public static final String DELETE = "DELETE";
+	public static final String REQUEST_DELETE_FAILED = "REQUEST_DELETE_FAILED";
+	public static final String REQUEST_DELEGATE_OWNERSHIP = "REQUEST_DELEGATE_OWNERSHIP";
 	public static final String DELEGATED_OWNERSHIP = "DELEGATED_OWNERSHIP";
+	public static final String REQUEST_DELEGATE_OWNERSHIP_FAILED = "REQUEST_DELEGATE_OWNERSHIP_FAILED";
+	public static final String NOTIFY = "NOTIFY";
 
 	/**
 	 * Static flag used for synchronization with the PeerManager at startup time
@@ -375,8 +378,7 @@ public abstract class ControlCenter {
 	public static void receiveMessages(Object caller) {
 		MessageManager messMan = new MessageManager(caller);
 		Message message = getMessageObject();
-		obs = (Observer) messMan;
-		message.addObserver(obs);
+		message.register(messMan);
 	}
 
 	/**

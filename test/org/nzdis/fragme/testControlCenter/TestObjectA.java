@@ -17,16 +17,20 @@ public class TestObjectA extends FMeObject {
 	
 //	public TestObjectA() {}
 	
-	public void changedObject() {
+	public void changed(FMeObject object) {
 		System.out.println("Received a change notification!");
-		this.setChanged();
-		this.notifyObservers();
+		//this.setChanged();
+		//this.notifyObservers();
 	}
 
-	public void deletedObject() {
+	@Override
+	public void delegatedOwnership(FMeObject object) {
+	}
+
+	public void deleted(FMeObject object) {
 		System.out.println("Received a delete notification!");
-		this.setChanged();
-		this.notifyObservers();
+		//this.setChanged();
+		//this.notifyObservers();
 	}
 
 	private static class Factory extends FragMeFactory {

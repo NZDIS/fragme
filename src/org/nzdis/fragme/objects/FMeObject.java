@@ -1,7 +1,6 @@
 package org.nzdis.fragme.objects;
 
 import java.io.Serializable;
-import java.util.Observable;
 import org.nzdis.fragme.factory.FactoryObject;
 import org.nzdis.fragme.ControlCenter;
 import org.jgroups.Address;
@@ -52,7 +51,8 @@ import org.jgroups.Address;
  * @version $Revision: 1.1 $Date: 2008/09/03 04:24:49 $
  * @refactored Morgan Bruce 16/07/2008
  */
-public abstract class FMeObject extends Observable implements FactoryObject, Serializable {
+public abstract class FMeObject extends FMeObservable implements FactoryObject, Serializable, ChangeObserver {
+	private transient static final long serialVersionUID = 6672421720523501646L;
 
 	/**
 	 * The unique id of this FMeObject
@@ -148,20 +148,6 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	public abstract void deserialize(FMeObject serObject);
 	
 	/**
-	 * An implementation of this method performs any local actions
-	 * (such as updating an animation) that need to be done upon
-	 * receival of a change notification
-	 */
-	public abstract void changedObject();
-
-	/**
-	 * An implementation of this method performs any local actions
-	 * (such as removing a graphic) that occur upon notification of 
-	 * an object delete
-	 */
-	public abstract void deletedObject();
-
-	/**
 	 * This method returns the ID of the object
 	 * 
 	 * @return int the ID of the object.
@@ -197,9 +183,9 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The default method always returns true - any update is accepted
 	 * Override this method to implement different behavior
 	 */
-	public boolean allowDeserialize(String requesterName) {
-		return true;
-	}
+	//public boolean allowDeserialize(String requesterName) {
+	//	return true;
+	//}
 
 	/**
 	 * Send a request to the owner, asking them to delegate ownership to this peer
@@ -217,9 +203,9 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The default method always returns true - any valid request for ownership is granted
 	 * Override this method to implement different behavior
 	 */
-	public boolean allowDelegationOfOwnership(String requesterName) {
-		return true;
-	}
+	//public boolean allowDelegationOfOwnership(String requesterName) {
+	//	return true;
+	//}
 
 	/**
 	 * Delegate ownership of this object to another peer
@@ -248,9 +234,9 @@ public abstract class FMeObject extends Observable implements FactoryObject, Ser
 	 * The default method always returns true - any request for deletion is granted
 	 * Override this method to implement different behavior
 	 */
-	public boolean allowDelete(String requesterName) {
-		return true;
-	}
+	//public boolean allowDelete(String requesterName) {
+	//	return true;
+	//}
 
 	/**
 	 * Returns the owner's address

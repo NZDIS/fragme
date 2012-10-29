@@ -13,6 +13,7 @@ import org.nzdis.fragme.exceptions.StartUpException;
 import org.nzdis.fragme.factory.FragMeFactory;
 import org.nzdis.fragme.objects.FMeObject;
 import org.nzdis.fragme.objects.FMeObjectReflection;
+import org.nzdis.fragme.objects.FMeObservable;
 import org.nzdis.fragme.peers.TypeWrappers.FlagBool;
 import org.nzdis.fragme.peers.TypeWrappers.FlagInt;
 import org.jgroups.Address;
@@ -33,7 +34,8 @@ import org.jgroups.blocks.PullPushAdapter;
  * @refactored Morgan Bruce, Frank Wu 1/8/2008
  * @refactored Nathan D. Lewis, Christopher Frantz - September 2012
  */
-public class PeerManagerImpl extends Observable implements PeerManager,
+// Removed "extends Observable"
+public class PeerManagerImpl extends FMeObservable implements PeerManager,
 		MessageListener, MembershipListener, ChannelListener {
 	
 	public static final boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
@@ -568,16 +570,22 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 
 		if (performative.equals(ControlCenter.MODIFY)) {
 			receiveModify(content, senderAddr);
+		} else if (performative.equals(ControlCenter.MODIFY_FAILED)) {
+			receiveModifyFailed(content, senderAddr);
+		} else if (performative.equals(ControlCenter.REQUEST_DELETE)) {
+			receiveRequestDelete(content, senderAddr);	
 		} else if (performative.equals(ControlCenter.DELETE)) {
 			receiveDelete(content, senderAddr);
-		} else if (performative.equals(ControlCenter.REQUEST_DELETE)) {
-			receiveRequestDelete(content, senderAddr);
-		} else if (performative.equals(ControlCenter.NOTIFY)) {
-			receiveNotify(content, senderAddr);
-		} else if (performative.equals(ControlCenter.REQUEST_OWNERSHIP)) {
-			receiveRequestOwnership(content, senderAddr);
+		} else if (performative.equals(ControlCenter.REQUEST_DELETE_FAILED)) {
+			receiveRequestDeleteFailed(content, senderAddr);
+		} else if (performative.equals(ControlCenter.REQUEST_DELEGATE_OWNERSHIP)) {
+			receiveRequestDelegateOwnership(content, senderAddr);
 		} else if (performative.equals(ControlCenter.DELEGATED_OWNERSHIP)) {
 			receiveDelegatedOwnership(content, senderAddr);
+		} else if (performative.equals(ControlCenter.REQUEST_DELEGATE_OWNERSHIP_FAILED)) {
+			receiveRequestOwnershipFailed(content, senderAddr);
+		} else if (performative.equals(ControlCenter.NOTIFY)) {
+			receiveNotify(content, senderAddr);
 		}
 
 		senderAddr = null;
@@ -587,115 +595,202 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 	}
 
 	/**
-	 * 
-	 * @param content
-	 *            an object modified
+	 * Receive a change made to an object.
+	 * The object could belong to us (in which case check first) or to another peer.
+	 * If the object is not already in the object manager then it will be added.
+	 * @param content The object that is modified or an object 
+	 * reflection (reference to object, field and new value)
 	 */
-	private void receiveModify(Object content, Address fromAddress) {
+	private void receiveModify(Object content, Address senderAddr) {
 		if (content instanceof FMeObject) {
+			// It is an instance of FMeObject
 			if(DEBUG_SENDING){
 				System.out.println("Receive: FMeObject");
 			}
+			
+			// Try to find the object in the object manager
 			FMeObject serialised = (FMeObject) content;
-			FMeObject existingObject = ControlCenter.getObjectManager().lookup(serialised);
-			// TODO make sure this is correct
-			if ((existingObject != null) && existingObject.allowDeserialize(ControlCenter.getPeerName(fromAddress))) {
-				FMeObject receivedObject = FragMeFactory.deserialize(serialised);
-				receive(receivedObject, fromAddress);
-				receivedObject.changedObject();
-				this.setChanged();
-				this.notifyObservers(receivedObject);
-				receivedObject = null;
+			FMeObject existObject = ControlCenter.getObjectManager().lookup(serialised);
+			
+			// Decide if this should be performed
+			if ((existObject != null) &&
+					existObject.getOwnerAddr().equals(myAddr) &&
+					!existObject.askChangeHandlersAllowChange(serialised, ControlCenter.getPeerName(senderAddr))) {
+				send(ControlCenter.MODIFY_FAILED, existObject, senderAddr);
+				return;
 			}
-			serialised = null;
+
+			// Deserialize
+			FMeObject receivedObject = FragMeFactory.deserialize(serialised);
+			receive(receivedObject, senderAddr);
+			
+			// Inform observers 
+			if (existObject == null) {
+				informNewFMeObjectObservers(receivedObject);
+			}
+			receivedObject.informChangeObserversChanged();
+			
 		} else if (content instanceof FMeObjectReflection) {
+			// It is an instance of FMeObjectReflection
 			if(DEBUG_SENDING){
 				System.out.println("Receive: FMeObjectReflection");
 			}
+			
+			// Try to find the object in the object manager
 			FMeObjectReflection refObject = (FMeObjectReflection) content;
-			// TODO test allowDeserialize
+			FMeObject existObject = ControlCenter.getObjectManager().lookupById(refObject.getId());
 
-			ObjectManager OM = ControlCenter.getObjectManager();
-
-			FMeObject existObject = OM.lookupById(refObject.getId());
-			String tempFieldName = refObject.getFieldName().substring(0, 1)
-					.toUpperCase()
-					+ refObject.getFieldName().substring(1,
-							refObject.getFieldName().length());
-			Method m;
-			try {
-				// HACK
-				if (existObject == null) {
+			if (existObject == null) {
+				// This should not be possible
+				throw new RuntimeException("FMeObjectReflection received for object that was not found");
+			} else {
+				// Decide if it should be performed
+				if (existObject.getOwnerAddr().equals(myAddr) &&
+						!existObject.askChangeHandlersAllowChangeField(refObject, ControlCenter.getPeerName(senderAddr))) {
+					send(ControlCenter.MODIFY_FAILED, existObject, senderAddr);
 					return;
 				}
-				existObject.frameworkChanging(true);
-				m = existObject.getClass().getMethod("set" + tempFieldName,
-						new Class[] { refObject.getValueObject().getClass() });
-				m.invoke(existObject,
-						new Object[] { refObject.getValueObject() });
-				existObject.frameworkChanging(false);
-				// HACK
-				existObject.changedObject();
-			} catch (Exception e) {
-				e.printStackTrace();
+				
+				// Deserialize (call the set method for the specified field)
+				if (existObject.askChangeHandlersAllowChangeField(refObject, ControlCenter.getPeerName(senderAddr))) {
+					String tempFieldName = refObject.getFieldName().substring(0, 1).toUpperCase() +
+							refObject.getFieldName().substring(1, refObject.getFieldName().length());
+					Method m;
+					try {
+						// HACK
+						existObject.frameworkChanging(true);
+						m = existObject.getClass().getMethod("set" + tempFieldName,
+								new Class[] { refObject.getValueObject().getClass() });
+						m.invoke(existObject,
+								new Object[] { refObject.getValueObject() });
+						existObject.frameworkChanging(false);
+						// HACK
+						existObject.informChangeObserversChanged();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 	}
 
 	/**
-	 * 
-	 * @param content
-	 *            the object to change ownership
-	 * @param senderAddr
-	 *            the address of the sender
+	 * Received a modify failed message from an object owner for a change we
+	 * tried to perform.
+	 * @param content The object that we tried to change, with values according to the owner
+	 * @param senderAddr The sender of the message
 	 */
-	private void receiveRequestOwnership(Object content, Address senderAddr) {
+	private void receiveModifyFailed(Object content, Address senderAddr) {
+		// It is an instance of FMeObject
+		if(DEBUG_SENDING){
+			System.out.println("Receive: FMeObject");
+		}
+		
+		// Try to find the object in the object manager (it should be there in this case)
+		FMeObject serialised = (FMeObject) content;
+		FMeObject existObject = ControlCenter.getObjectManager().lookup(serialised);
+		
+		// Decide if this should be performed
+		if (existObject == null) {
+			throw new RuntimeException("Modify failed received for object that was not found");
+		}
+
+		// Deserialize
+		FMeObject receivedObject = FragMeFactory.deserialize(serialised);
+		receive(receivedObject, senderAddr);
+		
+		// Inform observers
+		receivedObject.informChangeHandlersChangeFailed();
+	}
+	
+	/**
+	 * Received a request to delete an object which we (should) own
+	 * @param content The object that requests delete
+	 * @param senderAddr
+	 */
+	private void receiveRequestDelete(Object content, Address senderAddr) {
 		String senderName = ControlCenter.getPeerName(senderAddr);
 		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
-		if ((obj.getOwnerAddr().equals(ControlCenter.getMyAddress())) && 
-			(obj.allowDelegationOfOwnership(senderName))) {
-			obj.delegateOwnership(senderName);
+		if (obj.getOwnerAddr().equals(myAddr)) { 
+			if (obj.askDeleteHandlersAllowDelete(senderName)) {
+				obj.informChangeObserversDeleted();
+				ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
+			} else {
+				send(ControlCenter.REQUEST_DELETE_FAILED, content, senderAddr);
+			}
+		} else {
+			send(ControlCenter.REQUEST_DELETE_FAILED, content, senderAddr);
 		}
 	}
 
 	/**
-	 * 
-	 * @param content
-	 *            the object to change ownership
-	 * @param senderAddr
-	 *            the address of the sender
+	 * Receive an object deletion
+	 * @param content The object deleted
+	 * @param senderAddr The address of the sender
+	 */
+	private void receiveDelete(Object content, Address senderAddr) {
+		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
+		if (obj.getOwnerAddr().equals(senderAddr)) { 
+			obj.informChangeObserversDeleted();
+			ControlCenter.getObjectManager().deleteObject(senderAddr, (String)content);
+		}
+	}
+
+	/**
+	 * Receive notification that a request to delete an un-owned object was rejected by the owner
+	 * @param content The object that we were trying to delete
+	 * @param senderAddr The sender of the message
+	 */
+	private void receiveRequestDeleteFailed(Object content, Address senderAddr) {
+		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
+		obj.informDeleteHandlersDeleteFailed();
+	}
+
+	/**
+	 * Received a request to delegate ownership for an object that we (should) own.
+	 * If successful then tell the object to delegate itself.
+	 * @param content The object to change ownership
+	 * @param senderAddr The address of the requester
+	 */
+	private void receiveRequestDelegateOwnership(Object content, Address senderAddr) {
+		String senderName = ControlCenter.getPeerName(senderAddr);
+		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
+		if (obj.getOwnerAddr().equals(myAddr)) { 
+			if (obj.askDelegateHandlersAllowDelegateOwnership(senderName)) {
+				// Tell the object to delegate ownership 
+				obj.delegateOwnership(senderName);
+			} else {
+				send(ControlCenter.REQUEST_DELEGATE_OWNERSHIP_FAILED, content, senderAddr);
+			}
+		} else {
+			send(ControlCenter.REQUEST_DELEGATE_OWNERSHIP_FAILED, content, senderAddr);
+		}
+	}
+
+	/**
+	 * We received a notification saying that an object has been delegated ownership.
+	 * Update the object manager
+	 * @param content The object to change ownership
+	 * @param senderAddr The address of the sender
 	 */
 	private void receiveDelegatedOwnership(Object content, Address senderAddr) {
 		FMeObjectReflection objRef = (FMeObjectReflection)content;
 		FMeObject obj = ControlCenter.getObjectManager().lookupById(objRef.getId());
 		if (obj.getOwnerAddr().equals(senderAddr)) {
 			ControlCenter.getObjectManager().delegatedOwnership((Address)objRef.getValueObject(), obj);
+			obj.informChangeObserversDelegatedOwnership();
 		}
 	}
 
 	/**
-	 * 
-	 * @param content
-	 *            the object deleted
-	 * @param senderAddr
-	 *            the address of the sender
+	 * A request for delegation failed, so inform the listeners.
+	 * @param content 
+	 * @param senderAddr The address of the sender (original owner)
 	 */
-	private void receiveDelete(Object content, Address senderAddr) {
-		ControlCenter.getObjectManager().deleteObject(senderAddr, (String)content);
-	}
-
-	/**
-	 * 
-	 * @param content
-	 *            the object that requests delete
-	 * 
-	 */
-	private void receiveRequestDelete(Object content, Address senderAddr) {
-		String senderName = ControlCenter.getPeerName(senderAddr);
+	private void receiveRequestOwnershipFailed(Object content, Address senderAddr) {
 		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
-		if ((obj.getOwnerAddr() == ControlCenter.getMyAddress()) && 
-			(obj.allowDelete(senderName))) {
-			ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
+		if (obj.getOwnerAddr().equals(senderAddr)) {
+			obj.informDelegateHandlersDelegateOwnershipFailed();
 		}
 	}
 
@@ -944,8 +1039,8 @@ public class PeerManagerImpl extends Observable implements PeerManager,
 		} else {
 			ControlCenter.getObjectManager().deletePeer(addr);
 		}
-		this.setChanged();
-		this.notifyObservers(new Object());
+		//this.setChanged();
+		//this.notifyObservers(new Object());
 	}
 
 	/**

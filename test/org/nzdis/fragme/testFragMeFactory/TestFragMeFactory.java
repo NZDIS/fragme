@@ -161,12 +161,7 @@ public class TestFragMeFactory extends TestCase {
  * 
  */
 class TestClass2 extends FMeObject {
-
-	public void changedObject() {
-	}
-
-	public void deletedObject() {
-	}
+	private transient static final long serialVersionUID = -5494387548142630381L;
 
 	public void deserialize(final FMeObject serObject) {
 	}
@@ -179,5 +174,17 @@ class TestClass2 extends FMeObject {
 		protected FactoryObject create() {
 			return new TestClass2();
 		}
+	}
+
+	@Override
+	public void changed(FMeObject object) {
+	}
+
+	@Override
+	public void delegatedOwnership(FMeObject object) {
+	}
+
+	@Override
+	public void deleted(FMeObject object) {
 	}
 }

@@ -216,15 +216,11 @@ public interface ObjectManager {
 	public abstract void sendDelegatedOwnership(Address ownerAddr, FMeObjectReflection newOwner);
 
 	/**
-	 * This method sends an object to all peer, informing them that the owner
-	 * has changed
-	 * 
-	 * @param newAddr
-	 *            Address of the object's new owner
-	 * @param obj
-	 *            the object
+	 * This method moves the object from one storage space to another
+	 * @param newAddr Address of the object's new owner
+	 * @param obj The object
 	 */
-	public abstract void delegatedOwnership(Address newAddr, FMeObject obj);
+	public abstract void delegatedOwnership(Address newOwnerAddr, FMeObject obj);
 
 	/**
 	 * This method is called when a peer that the current peer is fostering

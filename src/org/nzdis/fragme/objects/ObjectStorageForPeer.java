@@ -101,7 +101,7 @@ public class ObjectStorageForPeer {
   			while(it.hasNext()){
   				FMeObject object = (FMeObject)it.next();
   				if(object.getId().equals(id)){
-  					object.deletedObject();
+  					object.informChangeObserversDeleted();
   					FragMeFactory.freeObject(object, object.getClass());
   					it.remove();
   					object = null;

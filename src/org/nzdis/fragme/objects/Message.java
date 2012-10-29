@@ -91,20 +91,16 @@ public class Message extends FMeObject implements Serializable {
 		this.type = ((Message) serString).getType();
 	}
 
-	/**
-	 * A generic method that is used when String has changed (this usually just
-	 * notifies observers)
-	 */
-	public void changedObject() {
-		// notify observers
-		this.setChanged();
-		this.notifyObservers();
+	@Override
+	public void changed(FMeObject object) {
 	}
 
-	/**
-	 * A generic method that is used when String is deleted - Unimplemented
-	 */
-	public void deletedObject() {
+	@Override
+	public void delegatedOwnership(FMeObject object) {
+	}
+
+	@Override
+	public void deleted(FMeObject object) {
 	}
 
 	/**
@@ -193,4 +189,5 @@ public class Message extends FMeObject implements Serializable {
 		return "Sender: " + this.sender + " Recipients: " + this.recipients
 				+ " Type: " + this.type + " Content: " + this.content;
 	}
+
 }

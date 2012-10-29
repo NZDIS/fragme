@@ -22,10 +22,14 @@ public class TestOwnershipObject extends FMeObject {
 	}
 
 	@Override
-	public void changedObject() {
+	public void changed(FMeObject object) {
 	}
 
 	@Override
-	public void deletedObject() {
+	public void delegatedOwnership(FMeObject object) {
+	}
+
+	@Override
+	public void deleted(FMeObject object) {
 	}
 }

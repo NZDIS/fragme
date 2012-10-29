@@ -10,7 +10,6 @@ import org.nzdis.fragme.ControlCenter;
 import org.nzdis.fragme.ObjectManager;
 import org.nzdis.fragme.PeerManager;
 import org.nzdis.fragme.exceptions.StartUpException;
-import org.nzdis.fragme.factory.FragMeFactory;
 import org.jgroups.Address;
 
 /**
@@ -484,7 +483,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	}
 
 	public void requestOwnership(Address addr, String id) {
-		ControlCenter.getPeerManager().send(ControlCenter.REQUEST_OWNERSHIP, id, addr);
+		ControlCenter.getPeerManager().send(ControlCenter.REQUEST_DELEGATE_OWNERSHIP, id, addr);
 	}
 
 	public void sendDelegatedOwnership(Address addr, FMeObjectReflection newOwner) {
@@ -492,7 +491,6 @@ public class ObjectManagerImpl implements ObjectManager {
 	}
 
 	public void delegatedOwnership(Address newOwnerAddr, FMeObject obj) {
-		// TODO do the actual switch
 		Address myAddr = ControlCenter.getMyAddress();
 		synchronized (storageForOtherPeers) {
 			synchronized (ownObjects) {

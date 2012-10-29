@@ -14,11 +14,11 @@ import junit.framework.TestCase;
 public class TestOwnershipTransfer extends TestCase {
 
 	public static final String TestGroupName = "jUnitTestOwnershipTransfer";
-	public static final String TestOwnershipClientSender = "TestOwnershipClientSender";
-	public static final String TestOwnershipClientReceiver = "TestOwnershipClientReceiver";
+	public static final String TestOwnershipOtherClient = "TestOwnershipOtherClient";
+	public static final String TestOwnershipTester = "TestOwnershipTester";
 	
 	static final Integer startupDelay = 5000;
-	static final Integer waitForSenderDelay = 10000;
+	static final Integer waitForOtherClientDelay = 10000;
 	static String path = "java -jar ";
 	
 	static {
@@ -26,7 +26,7 @@ public class TestOwnershipTransfer extends TestCase {
 		 * class for testing with multiple peers should be regenerated when changing code base. 
 		 * Export of entire framework project (i.e. FragME and JGroups) as Runnable Jar with TestClass.java as main class
 		 */
-		String subPath = TestOwnershipTransfer.class.getResource(TestOwnershipClientSender.class.getSimpleName() + ".jar").getPath();
+		String subPath = TestOwnershipTransfer.class.getResource(TestOwnershipOtherClient.class.getSimpleName() + ".jar").getPath();
 		if(DetermineOS.getOS().equals(DetermineOS.WINDOWS)) {
 			subPath = subPath.substring(1);
 			path = "cmd /C start " + path;
@@ -41,7 +41,7 @@ public class TestOwnershipTransfer extends TestCase {
 	 * Sets up a new connection for each test case. 
 	 */
 	public void setUp() {
-		ControlCenter.setUpConnections(TestGroupName, TestOwnershipClientReceiver);
+		ControlCenter.setUpConnections(TestGroupName, TestOwnershipTester);
 	}
 
 	/**
@@ -53,54 +53,91 @@ public class TestOwnershipTransfer extends TestCase {
 
 	/**
 	 * Tests requestOwnership
-	 * The receiver creates an object. The sender locates that object and sends a
-	 * request for ownership of it. The receiver accepts that request.
+	 * The tester creates an object. The other client locates that object and sends a
+	 * request for ownership of it. The tester accepts that request. The other client should 
+	 * now own the object.
 	 */
 	public void testRequestOwnership() throws InterruptedException, IOException {
-		// startup the receiver
+		// startup the tester
 		new TestOwnershipObject();
 		TestOwnershipObject obj = (TestOwnershipObject)ControlCenter.createNewObject(TestOwnershipObject.class);
-		assertEquals("The initial owner of the object is incorrect", TestOwnershipClientReceiver, obj.getOwnerName());
+		assertEquals("The initial owner of the object is incorrect", TestOwnershipTester, obj.getOwnerName());
 		obj = null;
 		
 		System.out.println("waiting for startup " + startupDelay + "ms");
 		Thread.sleep(startupDelay);
 		System.out.println("wait for startup finished");
 		
-		// startup the sender (will send based on parameter specified)
+		// startup the other client (will send based on parameter specified)
 		Runtime.getRuntime().exec(path + " testRequestOwnership");
 		
-		// give the sender time to startup and complete it's operations)
-		System.out.println("waiting for sender " + waitForSenderDelay + "ms");
-		Thread.sleep(waitForSenderDelay);
-		System.out.println("wait for sender finished");
+		// give the other client time to startup and complete it's operations
+		System.out.println("waiting for other client " + waitForOtherClientDelay + "ms");
+		Thread.sleep(waitForOtherClientDelay);
+		System.out.println("wait for other client finished");
 		
 		// check the results
 		obj = (TestOwnershipObject)ControlCenter.getAllObjects(TestOwnershipObject.class).elementAt(0);
-		assertEquals("The final owner of the object is incorrect", TestOwnershipClientSender, obj.getOwnerName());
+		assertEquals("The final owner of the object is incorrect", TestOwnershipOtherClient, obj.getOwnerName());
 	}
 
 	/**
 	 * Tests delegateOwnership
-	 * The sender creates an object and delegates it to the receiver
+	 * The other client creates an object and delegates it to the tester. The
+	 * tester should now see that it owns the object.
 	 */
-	public void testDelegateOwnership() throws InterruptedException, IOException {
-		// startup the receiver
+	public void testDelegateOwnership1() throws InterruptedException, IOException {
+		// startup the tester
 		System.out.println("waiting for startup " + startupDelay + "ms");
 		Thread.sleep(startupDelay);
 		System.out.println("wait for startup finished");
 		
-		// startup the sender (will send based on parameter specified)
-		Runtime.getRuntime().exec(path + " testDelegateOwnership");
+		// startup the other client (will send based on parameter specified)
+		Runtime.getRuntime().exec(path + " testDelegateOwnership1");
 		
-		// give the sender time to startup and complete it's operations)
-		System.out.println("waiting for sender " + waitForSenderDelay + "ms");
-		Thread.sleep(waitForSenderDelay);
-		System.out.println("wait for sender finished");
+		// give the other client time to startup and complete it's operations
+		System.out.println("waiting for other client " + waitForOtherClientDelay + "ms");
+		Thread.sleep(waitForOtherClientDelay);
+		System.out.println("wait for other client finished");
 		
 		// check the results
 		TestOwnershipObject obj = (TestOwnershipObject)ControlCenter.getAllObjects(TestOwnershipObject.class).elementAt(0);
-		assertEquals("The final owner of the object is incorrect", TestOwnershipClientReceiver, obj.getOwnerName());
+		assertEquals("The final owner of the object is incorrect", TestOwnershipTester, obj.getOwnerName());
+	}
+
+	/**
+	 * Tests delegateOwnership
+	 * The tester creates an object and delegates it to the other tester. The tester
+	 * should now see that the other client owns the object.
+	 */
+	public void testDelegateOwnership2() throws InterruptedException, IOException {
+		// startup the tester
+		new TestOwnershipObject();
+		TestOwnershipObject obj = (TestOwnershipObject)ControlCenter.createNewObject(TestOwnershipObject.class);
+		assertEquals("The initial owner of the object is incorrect", TestOwnershipTester, obj.getOwnerName());
+		
+		System.out.println("waiting for startup " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for startup finished");
+		
+		// startup the other client (will send based on parameter specified)
+		Runtime.getRuntime().exec(path + " testDelegateOwnership2");
+		
+		// give the other client time to startup
+		System.out.println("waiting for other client " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for other client startup");
+		
+		System.out.println("perform the operation");
+		obj.delegateOwnership(TestOwnershipOtherClient);
+		
+		// give the other client time to complete it's operations
+		System.out.println("waiting for other client " + startupDelay + "ms");
+		Thread.sleep(startupDelay);
+		System.out.println("wait for other client startup");
+		
+		// check the results
+		assertEquals("The final owner of the object is incorrect", TestOwnershipOtherClient, obj.getOwnerName());
 	}
 
 }

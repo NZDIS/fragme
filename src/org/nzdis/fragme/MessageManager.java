@@ -1,11 +1,12 @@
 package org.nzdis.fragme;
 
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Vector;
+
+import org.nzdis.fragme.objects.ChangeObserver;
+import org.nzdis.fragme.objects.FMeObject;
 import org.nzdis.fragme.objects.Message;
 
-public class MessageManager implements Observer {
+public class MessageManager implements ChangeObserver {
 
 	MessageReceiver actionObject;
 
@@ -13,20 +14,24 @@ public class MessageManager implements Observer {
 		actionObject = (MessageReceiver) o;
 	}
 
-	public void update(Observable o, Object arg) {
-
-		PeerManager PM = ControlCenter.getPeerManager();
-
-		String myName = PM.getMyPeerName();
-
-		if (o instanceof Message) {
-			Message msg = (Message) o;
+	@Override
+	public void changed(FMeObject object) {
+		if (object instanceof Message) {
+			Message msg = (Message) object;
 
 			Vector recipients = msg.getRecipients();
 
-			if (recipients == null || recipients.contains(myName)) {
+			if (recipients == null || recipients.contains(ControlCenter.getMyName())) {
 				actionObject.msgReceivedEvent(msg);
 			}
 		}
+	}
+
+	@Override
+	public void delegatedOwnership(FMeObject object) {
+	}
+
+	@Override
+	public void deleted(FMeObject object) {
 	}
 }
