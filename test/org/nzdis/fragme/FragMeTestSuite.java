@@ -4,11 +4,11 @@ import junit.framework.TestSuite;
 import org.nzdis.fragme.testControlCenter.TestControlCenter;
 import org.nzdis.fragme.testControlCenter.TestGetObjects;
 import org.nzdis.fragme.testFragMeFactory.TestFragMeFactory;
+import org.nzdis.fragme.testHandlers.TestHandlers;
 import org.nzdis.fragme.testMessageSending.TestMessageSending;
 import org.nzdis.fragme.testObjects.TestFMeObject;
 import org.nzdis.fragme.testObjects.TestObjectManager;
 import org.nzdis.fragme.testOwnershipTransfer.TestOwnershipTransfer;
-import org.nzdis.fragme.testPermissions.TestPermissions;
 
 /**
  * This class creates a test suite that runs the individual unit test cases for
@@ -34,7 +34,7 @@ public class FragMeTestSuite extends TestSuite {
 		suite.addTestSuite(TestMessageSending.class);
 		suite.addTestSuite(TestControlCenter.class);
 		suite.addTestSuite(TestOwnershipTransfer.class);
-		suite.addTestSuite(TestPermissions.class);
+		suite.addTestSuite(TestHandlers.class);
 		return suite;
 	}
 

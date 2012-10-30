@@ -3,17 +3,16 @@ package org.nzdis.fragme;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Hashtable;
 import java.util.Observer;
 import java.util.Vector;
 import org.nzdis.fragme.exceptions.StartUpException;
 import org.nzdis.fragme.factory.FragMeFactory;
 import org.nzdis.fragme.helpers.StartupWaitHelper;
 import org.nzdis.fragme.objects.Message;
+import org.nzdis.fragme.objects.NewFMeObjectObserver;
 import org.nzdis.fragme.objects.ObjectManagerImpl;
 import org.nzdis.fragme.peers.PeerManagerImpl;
 import org.nzdis.fragme.peers.TypeWrappers.FlagBool;
-import org.nzdis.fragme.peers.TypeWrappers.FlagInt;
 import org.jgroups.Address;
 
 /**
@@ -54,8 +53,6 @@ public abstract class ControlCenter {
 	 * Vector of objects to be serialised
 	 */
 	private static Vector seriList = new Vector();
-
-	private static Observer obs;
 
 	private static Message tempMessage = null;
 
@@ -237,6 +234,15 @@ public abstract class ControlCenter {
 			System.out.println(e);
 			return true;
 		}
+	}
+	
+	/**
+	 * Register a NewFMeObjectObserver
+	 * @param observer
+	 */
+	public static void registerNewFMeObjectObserver(NewFMeObjectObserver observer) {
+		PeerManagerImpl pmi = (PeerManagerImpl)PM;
+		pmi.register(observer);
 	}
 
 	/**
