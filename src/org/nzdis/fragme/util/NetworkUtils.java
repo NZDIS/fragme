@@ -110,19 +110,20 @@ public class NetworkUtils {
 			String address = null;
 			try {
 				interfacesEnumerator = NetworkInterface.getNetworkInterfaces();
+				while (interfacesEnumerator.hasMoreElements()) {
+					// Check each interface
+					intface = interfacesEnumerator.nextElement();
+					if (debugGetNonLoopbackAddress) {
+						System.out.println("NetworkInterface: " + intface.getDisplayName());
+					}
+					address = getNonLoopbackAddress(intface, protocol, scope);
+					if (address != null) {
+						return address;
+					}
+				}
 			} catch (SocketException e) {
 				System.err.println("A problem occurred when trying to obtain the list of available NetworkInterfaces.");
-			}
-			while (interfacesEnumerator.hasMoreElements()) {
-				// Check each interface
-				intface = interfacesEnumerator.nextElement();
-				if (debugGetNonLoopbackAddress) {
-					System.out.println("NetworkInterface: " + intface.getDisplayName());
-				}
-				address = getNonLoopbackAddress(intface, protocol, scope);
-				if (address != null) {
-					return address;
-				}
+				System.err.println("If this occurred on Android then you probably need to add INTERNET permission to your manifest!");
 			}
 			return null;
 		}
