@@ -57,7 +57,7 @@ public interface ObjectManager {
 	 * @param addr
 	 *            the FragMe/JGroups address to set
 	 */
-	public abstract void setMyAddress(Address addr);
+	//public abstract void setMyAddress(Address addr);
 
 	/**
 	 * This method retrieves the ObjectManager's address. This is called by the

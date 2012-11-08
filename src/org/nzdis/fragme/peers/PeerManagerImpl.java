@@ -1,13 +1,14 @@
 package org.nzdis.fragme.peers;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Observable;
+import java.util.List;
 import java.util.Random;
-import java.util.Vector;
 import org.nzdis.fragme.ControlCenter;
-import org.nzdis.fragme.ObjectManager;
 import org.nzdis.fragme.PeerManager;
 import org.nzdis.fragme.exceptions.StartUpException;
 import org.nzdis.fragme.factory.FragMeFactory;
@@ -20,12 +21,10 @@ import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelListener;
 import org.jgroups.JChannel;
-import org.jgroups.MembershipListener;
 import org.jgroups.MergeView;
 import org.jgroups.Message;
-import org.jgroups.MessageListener;
+import org.jgroups.Receiver;
 import org.jgroups.View;
-import org.jgroups.blocks.PullPushAdapter;
 
 /**
  * Implementation of the PeerManager Interface
@@ -36,7 +35,7 @@ import org.jgroups.blocks.PullPushAdapter;
  */
 // Removed "extends Observable"
 public class PeerManagerImpl extends FMeObservable implements PeerManager,
-		MessageListener, MembershipListener, ChannelListener {
+		Receiver, ChannelListener {
 	
 	public static final boolean DEBUG_CHANNEL_SETUP = ControlCenter.DEBUG_CHANNEL_SETUP;
 	public static final boolean DEBUG_SYNCHRONIZATION = ControlCenter.DEBUG_SYNCHRONIZATION;
@@ -73,9 +72,9 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	private String groupName;
 	/** The name of the peer */
 	private String peerName;
-	private Vector members = new Vector();
+	private ArrayList<Address> members = new ArrayList<Address>();
 	/** The address of the current peer */
-	private Address myAddr;
+	//private Address myAddr;
 	private Hashtable<Address, String> peerAddressToNameTable = new Hashtable<Address, String>();
 	private Hashtable<String, Address> peerNameToAddressTable = new Hashtable<String, Address>();
 	// TODO make sure that these are cleaned out when a peer leaves
@@ -96,11 +95,8 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	/** additional conservative wait to ensure connection is really established (in ms) */
 	private final long additionalWaitAfterConnect = 0;
 	
-	/** the PushPullAdaptor used */
-	private PullPushAdapter adaptor;
-
 	/** protocol stack */
-	private static String props = "UDP(mcast_addr=224.0.0.0;mcast_port=7500;ip_ttl=32;"
+	/*private static String props = "UDP(mcast_addr=224.0.0.0;mcast_port=7500;ip_ttl=32;"
 			+ "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):"
 			+ "PING(timeout=3000;num_initial_members=3):"
 			+ "MERGEFAST:"
@@ -112,7 +108,21 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 			+ "FRAG(frag_size=8096;down_thread=false;up_thread=false):"
 			+ "CAUSAL:"
 			+ "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;"
-			+ "shun=false;print_local_addr=true)";
+			+ "shun=false;print_local_addr=true)";*/
+	private static String props = "UDP(mcast_addr=224.0.0.0;mcast_port=7500;ip_ttl=32;"
+			+ "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):"
+			+ "PING(timeout=3000;num_initial_members=3):"
+			+ "FD_SOCK:"
+			+ "VERIFY_SUSPECT(timeout=1000):"
+			+ "pbcast.NAKACK(retransmit_timeout=50,100,200):"
+			+ "UNICAST:"
+			+ "pbcast.STABLE(desired_avg_gossip=20000):"
+			+ "FRAG(frag_size=8096):"
+			+ "pbcast.GMS(join_timeout=5000;print_local_addr=true)";
+	
+	public Address getMyAddress() {
+		return channel.getAddress();
+	}
 
 	/**
 	 * Constructor sets the groupName and peerName
@@ -281,7 +291,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 					synchronized (members) {
 						int peerToFosterMeSeq = randomNumGenerator.nextInt(noOfPeers.getValue());
 						peerToFosterMeAddr = (Address) members.get(peerToFosterMeSeq);
-						if (!peerToFosterMeAddr.equals(myAddr)) {
+						if (!peerToFosterMeAddr.equals(channel.getAddress())) {
 							members.notifyAll();
 							break;
 						}
@@ -315,18 +325,20 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 */
 	public boolean activate() {
 		try {
+			// TODO
 			channel = new JChannel(props);
-			channel.setChannelListener(this);
-			channel.setOpt(Channel.LOCAL, new Boolean(false));
+			
+			channel.addChannelListener(this);
+			channel.setDiscardOwnMessages(true);
+			channel.setReceiver(this);
 			channel.connect(groupName);
+			
+			//myAddr = channel.getAddress();
+			//ControlCenter.getObjectManager().setMyAddress(channel.getAddress());
+			System.out.println("address: " + channel.getAddress());
 
-			// activates the PullPushAdapter with MessageListener and MembershipListener
-			adaptor = new PullPushAdapter(channel, this, this);
-
-			myAddr = channel.getLocalAddress();
-			ControlCenter.getObjectManager().setMyAddress(myAddr);
-			instance.peerAddressToNameTable.put(myAddr, instance.getMyPeerName());
-			instance.peerNameToAddressTable.put(instance.getMyPeerName(), myAddr);
+			instance.peerAddressToNameTable.put(channel.getAddress(), instance.getMyPeerName());
+			instance.peerNameToAddressTable.put(instance.getMyPeerName(), channel.getAddress());
 
 			// wait until viewAccepted has been called at least once.
 			// this gives us our initial list of peers
@@ -455,7 +467,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 *            changed object
 	 */
 	public void receive(FMeObject object, Address fromAddress) {
-		if (object.getOwnerAddr().equals(myAddr))
+		if (object.getOwnerAddr().equals(channel.getAddress()))
 			receiveMyOwnObjects = true;
 		ControlCenter.getObjectManager().receiveChange(object, fromAddress);
 	}
@@ -471,6 +483,8 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 * @param addr
 	 *            the address to send to (use null for multicasting)
 	 */
+	FragMessage sendFragMsg = new FragMessage();
+	//Message sendMsg = new Message(null, null, null);
 	public synchronized void send(String performative, Object objectToSend, Address addr) {
 		Serializable serialised = null;
 		if (objectToSend instanceof FMeObject) {
@@ -489,15 +503,18 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 						"Object asked to be sent through PM is not serializable");
 			}
 		}
-		FragMessage fragMsg = new FragMessage();
-		fragMsg.setContent(serialised);
-		fragMsg.setPerformative(performative);
-		Message msg = new Message(addr, myAddr, fragMsg);
+		//FragMessage fragMsg = new FragMessage();
+		sendFragMsg.setContent(serialised);
+		sendFragMsg.setPerformative(performative);
+		Message sendMsg = new Message(addr, channel.getAddress(), sendFragMsg);
+		//sendMsg.setDest(addr);
+		//sendMsg.setSrc(myAddr);
+		//sendMsg.setObject(sendFragMsg);
 		try {
 			if(DEBUG_SENDING){
 				System.out.println("Sending message through channel");
 			}
-			channel.send(msg);
+			channel.send(sendMsg);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -556,7 +573,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	public synchronized void receive(Message msg) {
 		Address senderAddr = msg.getSrc();
 		String s = senderAddr.toString();
-		String a = myAddr.toString();
+		String a = channel.getAddress().toString();
 		// if it's not our own object(that means we need to care)
 		// shouldn't happen because we adjusted the protocol options so that
 		// changes
@@ -614,7 +631,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 			
 			// Decide if this should be performed
 			if ((existObject != null) &&
-					existObject.getOwnerAddr().equals(myAddr) &&
+					existObject.getOwnerAddr().equals(channel.getAddress()) &&
 					!existObject.askChangeHandlersAllowChange(serialised, ControlCenter.getPeerName(senderAddr))) {
 				send(ControlCenter.MODIFY_FAILED, existObject, senderAddr);
 				return;
@@ -645,7 +662,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 				throw new RuntimeException("FMeObjectReflection received for object that was not found");
 			} else {
 				// Decide if it should be performed
-				if (existObject.getOwnerAddr().equals(myAddr) &&
+				if (existObject.getOwnerAddr().equals(channel.getAddress()) &&
 						!existObject.askChangeHandlersAllowChangeField(refObject, ControlCenter.getPeerName(senderAddr))) {
 					send(ControlCenter.MODIFY_FAILED, existObject, senderAddr);
 					return;
@@ -711,10 +728,10 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	private void receiveRequestDelete(Object content, Address senderAddr) {
 		String senderName = ControlCenter.getPeerName(senderAddr);
 		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
-		if (obj.getOwnerAddr().equals(myAddr)) { 
+		if (obj.getOwnerAddr().equals(channel.getAddress())) { 
 			if (obj.askDeleteHandlersAllowDelete(senderName)) {
 				obj.informChangeObserversDeleted();
-				ControlCenter.getObjectManager().deleteObject(myAddr, (String)content);
+				ControlCenter.getObjectManager().deleteObject(channel.getAddress(), (String)content);
 			} else {
 				send(ControlCenter.REQUEST_DELETE_FAILED, content, senderAddr);
 			}
@@ -755,7 +772,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	private void receiveRequestDelegateOwnership(Object content, Address senderAddr) {
 		String senderName = ControlCenter.getPeerName(senderAddr);
 		FMeObject obj = ControlCenter.getObjectManager().lookupById((String)content);
-		if (obj.getOwnerAddr().equals(myAddr)) { 
+		if (obj.getOwnerAddr().equals(channel.getAddress())) { 
 			if (obj.askDelegateHandlersAllowDelegateOwnership(senderName)) {
 				// Tell the object to delegate ownership 
 				obj.delegateOwnership(senderName);
@@ -852,8 +869,8 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 					peerMyChildIsFostering = peerImFostering;
 					peerImFostering = senderAddr;
 				} else {
-					sendFragMessage(myAddr, REPLY_TO_BE_FOSTERED, senderAddr);
-					peerMyChildIsFostering = myAddr;
+					sendFragMessage(channel.getAddress(), REPLY_TO_BE_FOSTERED, senderAddr);
+					peerMyChildIsFostering = channel.getAddress();
 					peerImFostering = senderAddr;
 				}
 				
@@ -922,8 +939,10 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 *            View
 	 */
 	public synchronized void viewAccepted(View new_view) {
-		Vector joined_mbrs, left_mbrs, tmp;
-		Object tmp_mbr; // IpAddress
+		ArrayList<Address> joined_mbrs;
+		ArrayList<Address> left_mbrs;
+		List<Address> tmp;
+		Address tmp_mbr; // IpAddress
 		if(DEBUG_CHANNEL_SETUP){
 			if(new_view instanceof MergeView){
 			    System.out.println("** MergeView=" + new_view);
@@ -938,23 +957,23 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 		synchronized (members) {
 
 			// get new members
-			joined_mbrs = new Vector();
+			joined_mbrs = new ArrayList<Address>();
 			for (int i = 0; i < tmp.size(); i++) {
-				tmp_mbr = tmp.elementAt(i);
+				tmp_mbr = tmp.get(i);
 				if (!members.contains(tmp_mbr))
-					joined_mbrs.addElement(tmp_mbr);
+					joined_mbrs.add(tmp_mbr);
 			}
 
 			// get members that left
-			left_mbrs = new Vector();
+			left_mbrs = new ArrayList<Address>();
 			for (int i = 0; i < members.size(); i++) {
-				tmp_mbr = members.elementAt(i);
+				tmp_mbr = members.get(i);
 				if (!tmp.contains(tmp_mbr))
-					left_mbrs.addElement(tmp_mbr);
+					left_mbrs.add(tmp_mbr);
 			}
 
 			// adjust our own membership
-			members.removeAllElements();
+			members.clear();
 			members.addAll(tmp);
 
 			// record how many peers (excluding ourselves) we have (for fast lookup)
@@ -968,11 +987,11 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 
 		if (joined_mbrs.size() > 0)
 			for (int i = 0; i < joined_mbrs.size(); i++)
-				memberJoined((Address) joined_mbrs.elementAt(i));
+				memberJoined(joined_mbrs.get(i));
 
 		if (left_mbrs.size() > 0)
 			for (int i = 0; i < left_mbrs.size(); i++)
-				memberLeft((Address) left_mbrs.elementAt(i));
+				memberLeft(left_mbrs.get(i));
 	}
 
 	/**
@@ -1001,7 +1020,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 *            address of the new member joined
 	 */
 	private void memberJoined(Address addr) {
-		if (!addr.equals(myAddr)) {
+		if (!addr.equals(channel.getAddress())) {
 			System.out.println("Member " + addr + " joined!");
 			// update ControlCenter.allPeersHaveFinishedSetup to indicate that there is 
 			// a peer which has not completed setup and start a new thread to 
@@ -1031,7 +1050,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 		}
 		if (addr.equals(peerImFostering)) {
 			peerImFostering = peerMyChildIsFostering;
-			if (!peerImFostering.equals(myAddr)) {
+			if (!peerImFostering.equals(channel.getAddress())) {
 				fosterResult.setValue(false);
 				sendFragMessage("", REQUEST_TO_FOSTER, peerImFostering);
 			}
@@ -1098,6 +1117,18 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 			System.out.println("Channel '" + groupName + "' reconnected.");
 		}
 		connected = true;
+	}
+
+	@Override
+	public void getState(OutputStream output) throws Exception {
+	}
+
+	@Override
+	public void setState(InputStream input) throws Exception {
+	}
+
+	@Override
+	public void unblock() {
 	}
 
 }

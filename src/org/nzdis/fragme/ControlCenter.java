@@ -14,6 +14,7 @@ import org.nzdis.fragme.objects.ObjectManagerImpl;
 import org.nzdis.fragme.peers.PeerManagerImpl;
 import org.nzdis.fragme.peers.TypeWrappers.FlagBool;
 import org.jgroups.Address;
+import org.jgroups.Global;
 
 /**
  * The ControlCenter provides the single point of control for the FragMe
@@ -222,7 +223,7 @@ public abstract class ControlCenter {
 	 */
 	public static boolean setUpConnections(String groupName, String peerName, String bindAddress) {
 		if ((bindAddress != null) && (bindAddress.length() > 0)) {
-			System.setProperty("UDP.bind_addr", bindAddress);
+			System.setProperty(Global.BIND_ADDR, bindAddress);
 		}
 		try {
 			OM = ObjectManagerImpl.startObjectManager();
@@ -270,7 +271,7 @@ public abstract class ControlCenter {
 	 * @return the peer's own address
 	 */
 	public static Address getMyAddress() {
-		return OM.getMyAddress();
+		return PM.getMyAddress();
 	}
 
 	/**

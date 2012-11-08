@@ -35,6 +35,9 @@ public interface PeerManager {
 	 */
 	public abstract String getPeerName(Address addr);
 
+	// TODO
+	public abstract Address getMyAddress();
+	
 	/**
 	 * returns the name of the group
 	 */

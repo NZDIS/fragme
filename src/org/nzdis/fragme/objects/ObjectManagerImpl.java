@@ -31,7 +31,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	/**
 	 * The address of the peer this ObjectManager belongs to
 	 */
-	private Address myAddr;
+	//private Address myAddr;
 
 	/**
 	 * Object storage for other peers
@@ -201,9 +201,9 @@ public class ObjectManagerImpl implements ObjectManager {
 	 * @param myAddr
 	 *            the Address of a peer
 	 */
-	public void setMyAddress(Address myAddr) {
+	/*public void setMyAddress(Address myAddr) {
 		this.myAddr = myAddr;
-	}
+	}*/
 
 	/**
 	 * Returns the address of a peer
@@ -211,7 +211,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	 * @return the address of a peer
 	 */
 	public Address getMyAddress() {
-		return myAddr;
+		return ControlCenter.getMyAddress();
 	}
 
 	/**
@@ -287,7 +287,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	 */
 	public void pushChange(FMeObject object) {
 		PeerManager pm = ControlCenter.getPeerManager();
-		if (object.getOwnerAddr().equals(myAddr)) {
+		if (object.getOwnerAddr().equals(ControlCenter.getMyAddress())) {
 			pm.send(ControlCenter.MODIFY, object, null);
 		} else {
 			pm.send(ControlCenter.MODIFY, object, object.getOwnerAddr());
@@ -325,7 +325,7 @@ public class ObjectManagerImpl implements ObjectManager {
 		}
 		PeerManager pm = ControlCenter.getPeerManager();
 
-		if (object.getOwnerAddr().equals(myAddr)) {
+		if (object.getOwnerAddr().equals(ControlCenter.getMyAddress())) {
 			pm.send(ControlCenter.MODIFY, reflectable, null);
 		} else {
 			pm.send(ControlCenter.MODIFY, reflectable, object.getOwnerAddr());
@@ -371,7 +371,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	 */
 	public void addObject(FMeObject object) {
 		Address ownerAddr = object.getOwnerAddr();
-		if (ownerAddr.equals(myAddr)) {
+		if (ownerAddr.equals(ControlCenter.getMyAddress())) {
 			addOwnObject(object);
 		} else {
 			addObjectOfOtherPeer(object);
@@ -412,7 +412,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	public void receiveChange(FMeObject object, Address fromAddress) {
 		// If I received a change for an object I own then I will transmit this change to 
 		// all peers.
-		if (object.getOwnerAddr().equals(myAddr)) {
+		if (object.getOwnerAddr().equals(ControlCenter.getMyAddress())) {
 			// If you want to exclude the address from which a change was received then
 			// you need to construct a vector of all addresses minus the changer and pass
 			// it here, instead of "null"
@@ -464,7 +464,7 @@ public class ObjectManagerImpl implements ObjectManager {
 	}
 
 	public void deleteObject(Address addr, String id) {
-		if (addr.equals(myAddr)) {
+		if (addr.equals(ControlCenter.getMyAddress())) {
 			synchronized (ownObjects) {
 				ownObjects.deleteObject(id);
 			}
@@ -523,7 +523,7 @@ public class ObjectManagerImpl implements ObjectManager {
 					FMeObject object = (FMeObject) objects.get(i);
 					if (object instanceof Transferable) {
 						peerStorage.deleteObjectInDropOutCase(object.getId());
-						object.setOwnerAddr(myAddr);
+						object.setOwnerAddr(ControlCenter.getMyAddress());
 						addOwnObject(object);
 						pushChange(object);
 					}
