@@ -225,6 +225,7 @@ public abstract class ControlCenter {
 		if ((bindAddress != null) && (bindAddress.length() > 0)) {
 			System.setProperty(Global.BIND_ADDR, bindAddress);
 		}
+		System.setProperty(Global.USE_JDK_LOGGER, "true");
 		try {
 			OM = ObjectManagerImpl.startObjectManager();
 			PM = PeerManagerImpl.startPeerManager(groupName, peerName);
