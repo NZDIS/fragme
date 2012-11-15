@@ -335,7 +335,6 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 			
 			//myAddr = channel.getAddress();
 			//ControlCenter.getObjectManager().setMyAddress(channel.getAddress());
-			System.out.println("address: " + channel.getAddress());
 
 			instance.peerAddressToNameTable.put(channel.getAddress(), instance.getMyPeerName());
 			instance.peerNameToAddressTable.put(instance.getMyPeerName(), channel.getAddress());
