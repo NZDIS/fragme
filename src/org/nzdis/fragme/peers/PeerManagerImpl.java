@@ -349,7 +349,6 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 							try {
 								sendMsg = sendQueue.take();
 								while (isRunning) {
-									// TODO
 									if(DEBUG_SENDING){
 										System.out.println("Sending message through channel");
 									}
@@ -544,7 +543,6 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 						"Object asked to be sent through PM is not serializable");
 			}
 		}
-		// TODO
 		sendFragMsg.setContent(serialised);
 		sendFragMsg.setPerformative(performative);
 		Message sendMsg = new Message(addr, channel.getAddress(), sendFragMsg);
