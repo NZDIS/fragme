@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.SynchronousQueue;
+
 import org.nzdis.fragme.ControlCenter;
 import org.nzdis.fragme.PeerManager;
 import org.nzdis.fragme.exceptions.StartUpException;
@@ -49,9 +51,11 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	public static final String REPLY_TO_BE_FOSTERED = "REPLY_TO_BE_FOSTERED";
 	public static final String REQUEST_TO_FOSTER = "REQUEST_TO_FOSTER";
 	public static final String REQUEST_TO_BE_FOSTERED = "REQUEST_TO_BE_FOSTERED";
+	
+	public static final String SHUTDOWN = "SHUTDOWN";
 
 	/** Member variables */
-	private boolean receiveMyOwnObjects = false;
+	private boolean receivedMyOwnObjects = false;
 	private FlagBool peerListReceived = new FlagBool(false);
 	private static FlagInt noOfPeers = new FlagInt(0);
 
@@ -82,6 +86,9 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	private Hashtable<Address, FlagBool> peersWhichHaveSentObjects = new Hashtable<Address, FlagBool>();
 	private Hashtable<Address, JoinThread> joinThreads = new Hashtable<Address, JoinThread>(); 
 	private MessageContainer mc = new MessageContainer();
+	
+	private static boolean isRunning = false;
+	private SynchronousQueue<Message> sendQueue = new SynchronousQueue<Message>();
 
 	/** The transport channel used */
 	private JChannel channel;
@@ -323,66 +330,101 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 * 
 	 * @return TRUE if the peer has existed before, FALSE if not
 	 */
+	private boolean activateIsComplete = false;
 	public boolean activate() {
-		try {
-			// TODO
-			channel = new JChannel(props);
-			
-			channel.addChannelListener(this);
-			channel.setDiscardOwnMessages(true);
-			channel.setReceiver(this);
-			channel.connect(groupName);
-			
-			//myAddr = channel.getAddress();
-			//ControlCenter.getObjectManager().setMyAddress(channel.getAddress());
-
-			instance.peerAddressToNameTable.put(channel.getAddress(), instance.getMyPeerName());
-			instance.peerNameToAddressTable.put(instance.getMyPeerName(), channel.getAddress());
-
-			// wait until viewAccepted has been called at least once.
-			// this gives us our initial list of peers
-			synchronized (peerListReceived) {
-				while (peerListReceived.getValue() == false) {
-					try {
-						peerListReceived.wait();
-					} catch (InterruptedException ex) {
-						ex.printStackTrace();
-					}
-				} // end while
-			} // end synchronized(peerSetReceived)
-
-			// wait until all peers have finished setup. If we have no peers (after 
-			// receiving our first peerList during the section above) then skip this 
-			if (noOfPeers.getValue() > 0) {
-				synchronized (ControlCenter.allPeersHaveFinishedSetup) {
-					while (!ControlCenter.allPeersHaveFinishedSetup.getValue()) {
-						try {
-							ControlCenter.allPeersHaveFinishedSetup.wait();
-						} catch (InterruptedException ex) {
-							ex.printStackTrace();
+		
+		Thread activateThread = new Thread() {
+			public void run() {
+				try {
+					channel = new JChannel(props);
+					
+					channel.addChannelListener(PeerManagerImpl.instance);
+					channel.setDiscardOwnMessages(true);
+					channel.setReceiver(PeerManagerImpl.instance);
+					channel.connect(groupName);
+					
+					Thread sendMonitor = new Thread() {
+						public void run() {
+							Message sendMsg;
+							try {
+								sendMsg = sendQueue.take();
+								while (isRunning) {
+									// TODO
+									if(DEBUG_SENDING){
+										System.out.println("Sending message through channel");
+									}
+									channel.send(sendMsg);
+									sendMsg = sendQueue.take();
+								}
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
 						}
-					} // end while
-				} // end synchronized(otherPeerCount)
-			}
+					};
 
-			new PeerFosteringThread();
-			
-			long expiredTime = 0;
-			while(!connected && expiredTime < activationTimeOut){
-				Thread.sleep(timeBetweenActivationChecks);
-				expiredTime += timeBetweenActivationChecks;
+					isRunning = true;
+					sendMonitor.start();
+					
+					//myAddr = channel.getAddress();
+					//ControlCenter.getObjectManager().setMyAddress(channel.getAddress());
+		
+					instance.peerAddressToNameTable.put(channel.getAddress(), instance.getMyPeerName());
+					instance.peerNameToAddressTable.put(instance.getMyPeerName(), channel.getAddress());
+		
+					// wait until viewAccepted has been called at least once.
+					// this gives us our initial list of peers
+					synchronized (peerListReceived) {
+						while (peerListReceived.getValue() == false) {
+							try {
+								peerListReceived.wait();
+							} catch (InterruptedException ex) {
+								ex.printStackTrace();
+							}
+						} // end while
+					} // end synchronized(peerSetReceived)
+		
+					// wait until all peers have finished setup. If we have no peers (after 
+					// receiving our first peerList during the section above) then skip this 
+					if (noOfPeers.getValue() > 0) {
+						synchronized (ControlCenter.allPeersHaveFinishedSetup) {
+							while (!ControlCenter.allPeersHaveFinishedSetup.getValue()) {
+								try {
+									ControlCenter.allPeersHaveFinishedSetup.wait();
+								} catch (InterruptedException ex) {
+									ex.printStackTrace();
+								}
+							} // end while
+						} // end synchronized(otherPeerCount)
+					}
+		
+					new PeerFosteringThread();
+					
+					long expiredTime = 0;
+					while(!connected && expiredTime < activationTimeOut){
+						Thread.sleep(timeBetweenActivationChecks);
+						expiredTime += timeBetweenActivationChecks;
+					}
+					if(!connected){
+						throw new RuntimeException("Connection to Channel '" + groupName + "' was not established within " + activationTimeOut + "ms.");
+					} else {
+						Thread.sleep(additionalWaitAfterConnect);
+					}
+				} catch (Exception ex) {
+					ex.printStackTrace();
+					System.out.println("Couldn't create JChannel!");
+				}
+				activateIsComplete = true;
 			}
-			if(!connected){
-				throw new RuntimeException("Connection to Channel '" + groupName + "' was not established within " + activationTimeOut + "ms.");
-			} else {
-				Thread.sleep(additionalWaitAfterConnect);
+		};
+		activateThread.start();
+		while (!activateIsComplete) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			System.out.println("Couldn't create JChannel!");
 		}
-
-		return receiveMyOwnObjects;
+		return receivedMyOwnObjects;
 	}
 
 	/**
@@ -416,6 +458,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	}
 
 	public static void stopPeerManager() {
+		isRunning = false;
 		instance.channel.close();
 		instance = null;
 	}
@@ -467,7 +510,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 */
 	public void receive(FMeObject object, Address fromAddress) {
 		if (object.getOwnerAddr().equals(channel.getAddress()))
-			receiveMyOwnObjects = true;
+			receivedMyOwnObjects = true;
 		ControlCenter.getObjectManager().receiveChange(object, fromAddress);
 	}
 
@@ -482,8 +525,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 	 * @param addr
 	 *            the address to send to (use null for multicasting)
 	 */
-	FragMessage sendFragMsg = new FragMessage();
-	//Message sendMsg = new Message(null, null, null);
+	private static final FragMessage sendFragMsg = new FragMessage();
 	public synchronized void send(String performative, Object objectToSend, Address addr) {
 		Serializable serialised = null;
 		if (objectToSend instanceof FMeObject) {
@@ -502,23 +544,18 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 						"Object asked to be sent through PM is not serializable");
 			}
 		}
-		//FragMessage fragMsg = new FragMessage();
+		// TODO
 		sendFragMsg.setContent(serialised);
 		sendFragMsg.setPerformative(performative);
 		Message sendMsg = new Message(addr, channel.getAddress(), sendFragMsg);
-		//sendMsg.setDest(addr);
-		//sendMsg.setSrc(myAddr);
-		//sendMsg.setObject(sendFragMsg);
-		try {
-			if(DEBUG_SENDING){
-				System.out.println("Sending message through channel");
-			}
-			channel.send(sendMsg);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		serialised = null;
 		objectToSend = null;
+
+		try {
+			sendQueue.put(sendMsg);
+		} catch (InterruptedException e1) {
+			e1.printStackTrace();
+		}
 
 	}
 

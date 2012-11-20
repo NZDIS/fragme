@@ -154,20 +154,16 @@ public abstract class ControlCenter {
 		return OM.getOwnObjects();
 	}
 
-	public static boolean setUpConnectionsWithHelper(String groupName, StartupWaitHelper helper) {
-		boolean startupResult = setUpConnections(groupName);
-		helper.waitForCondition();
-		return startupResult;
+	public static boolean setUpConnections(String groupName) {
+		return setUpConnectionsWithHelper(groupName, null);
 	}
 	
-	public static boolean setUpConnectionsWithHelper(String groupName, String peerName, StartupWaitHelper helper) {
-		return setUpConnectionsWithHelper(groupName, peerName, null, helper);
+	public static boolean setUpConnections(String groupName, String peerName) {
+		return setUpConnectionsWithHelper(groupName, peerName, null, null);
 	}
-	
-	public static boolean setUpConnectionsWithHelper(String groupName, String peerName, String bindAddress, StartupWaitHelper helper) {
-		boolean startupResult = setUpConnections(groupName, peerName, bindAddress);
-		helper.waitForCondition();
-		return startupResult;
+
+	public static boolean setUpConnections(String groupName, String peerName, String bindAddress) {
+		return setUpConnectionsWithHelper(groupName, peerName, bindAddress, null);
 	}
 	
 	/**
@@ -182,7 +178,7 @@ public abstract class ControlCenter {
 	 * 
 	 * @return true if the peer has existed before, return false otherwise
 	 */
-	public static boolean setUpConnections(String groupName) {
+	public static boolean setUpConnectionsWithHelper(String groupName, StartupWaitHelper helper) {
 		System.out.println("Please enter your peer name");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		String peerName = null;
@@ -199,13 +195,13 @@ public abstract class ControlCenter {
 			}
 		}
 
-		return setUpConnections(groupName, peerName, null);
+		return setUpConnectionsWithHelper(groupName, peerName, null, helper);
 	}
 	
-	public static boolean setUpConnections(String groupName, String peerName) {
-		return setUpConnections(groupName, peerName, null);
+	public static boolean setUpConnectionsWithHelper(String groupName, String peerName, StartupWaitHelper helper) {
+		return setUpConnectionsWithHelper(groupName, peerName, null, helper);
 	}
-
+	
 	/**
 	 * Sets up the peer connection and takes care of all the initialization
 	 * processes. This method takes a group name and a peer name. This method,
@@ -218,24 +214,30 @@ public abstract class ControlCenter {
 	 *            peer name to initialise
 	 * @param bindAddress
 	 * 		      address to bind to
+	 * @param helper
+	 * 		      startup wait helper
 	 * 
 	 * @return true if the peer has existed before, return false otherwise
 	 */
-	public static boolean setUpConnections(String groupName, String peerName, String bindAddress) {
+	public static boolean setUpConnectionsWithHelper(String groupName, String peerName, String bindAddress, StartupWaitHelper helper) {
 		if ((bindAddress != null) && (bindAddress.length() > 0)) {
 			System.setProperty(Global.BIND_ADDR, bindAddress);
 		}
 		System.setProperty(Global.USE_JDK_LOGGER, "true");
+		boolean droppedOutBefore = false;
 		try {
 			OM = ObjectManagerImpl.startObjectManager();
 			PM = PeerManagerImpl.startPeerManager(groupName, peerName);
-			boolean droppedOutBefore = PM.activate();
+			droppedOutBefore = PM.activate();
 			checkPeersConnected();
-			return droppedOutBefore;
 		} catch (StartUpException e) {
 			System.out.println(e);
-			return true;
+			droppedOutBefore = true;
 		}
+		if (helper != null) {
+			helper.waitForCondition();
+		}
+		return droppedOutBefore;
 	}
 	
 	/**
