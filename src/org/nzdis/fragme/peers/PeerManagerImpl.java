@@ -121,8 +121,7 @@ public class PeerManagerImpl extends FMeObservable implements PeerManager,
 			+ "PING(timeout=3000;num_initial_members=3):"
 			+ "FD_SOCK:"
 			+ "VERIFY_SUSPECT(timeout=1000):"
-			+ "pbcast.NAKACK(retransmit_timeout=50,100,200):"
-			+ "UNICAST:"
+			+ "pbcast.NAKACK(retransmit_timeout=100,200,400):"
 			+ "pbcast.STABLE(desired_avg_gossip=20000):"
 			+ "FRAG(frag_size=8096):"
 			+ "pbcast.GMS(join_timeout=5000;print_local_addr=true)";
